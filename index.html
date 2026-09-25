@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LotusLane</title>
+<meta name="theme-color" content="#0b3d2e"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="LotusLane"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#f4efe6;color:#14241d}
+header{background:#0b3d2e;color:#fff;padding:16px 20px;position:sticky;top:0}
+h1{margin:0;font-size:1.3rem}
+main{max-width:720px;margin:0 auto;padding:16px}
+.card{background:#fffdf8;border:1px solid #e4d8c4;border-radius:16px;padding:16px;margin:12px 0}
+label{display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;margin:8px 0 4px}
+select,input{width:100%;padding:10px;border-radius:10px;border:1px solid #d6cbb8;box-sizing:border-box}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+a.btn,button{display:inline-block;background:#0b3d2e;color:#fff;text-decoration:none;border:0;border-radius:999px;padding:10px 14px;font-weight:700;margin:4px 4px 0 0}
+.s{background:#efe6d6;color:#14241d}
+p{line-height:1.5}
+</style>
+</head>
+<body>
+<header><h1>🌻 LotusLane</h1><div>Budget vegan Asia · add this page to your Home Screen</div></header>
+<main>
+<div class="card">
+<b>Install</b>
+<p>iPhone: Safari Share → Add to Home Screen.<br>Android: Chrome menu → Add to Home Screen.</p>
+</div>
+<div class="card">
+<h2>Cheap flights</h2>
+<div class="row">
+<div><label>From</label><select id="fr">
+<option value="LON">London</option><option value="BKK">Bangkok</option>
+<option value="HAN">Hanoi</option><option value="SGN">Ho Chi Minh</option>
+<option value="DPS">Bali</option><option value="KUL">Kuala Lumpur</option>
+<option value="SIN">Singapore</option><option value="MNL">Manila</option>
+<option value="NRT">Tokyo</option><option value="TPE">Taipei</option>
+</select></div>
+<div><label>To</label><select id="to">
+<option value="BKK">Bangkok</option><option value="HAN">Hanoi</option>
+<option value="SGN">Ho Chi Minh</option><option value="DPS">Bali</option>
+<option value="KUL">Kuala Lumpur</option><option value="SIN">Singapore</option>
+<option value="CNX">Chiang Mai</option><option value="REP">Siem Reap</option>
+<option value="MNL">Manila</option><option value="LON">London</option>
+</select></div>
+</div>
+<label>Date</label><input type="date" id="dt"/>
+<p id="links"></p>
+<button onclick="go()">Search Google / Kayak / Skyscanner / Kiwi</button>
+</div>
+<div class="card">
+<h2>Trains · buses · taxis</h2>
+<p>12Go for SEA trains, buses and ferries. Grab in TH/VN/MY/SG/PH/ID. Gojek in Indonesia. Japan/Korea/Taiwan: rail cards, not scooters.</p>
+<a class="btn" href="https://12go.asia">12Go</a>
+<a class="btn s" href="https://www.baolau.com">Baolau VN</a>
+<a class="btn s" href="https://www.rome2rio.com">Rome2Rio</a>
+</div>
+<div class="card">
+<h2>Official e-visa</h2>
+<a class="btn" href="https://evisa.gov.vn/e-visa/foreigners/">Vietnam</a>
+<a class="btn s" href="https://www.evisa.gov.kh/">Cambodia</a>
+<a class="btn s" href="https://evisa.imigrasi.go.id/">Indonesia</a>
+<a class="btn s" href="https://www.thaievisa.go.th/">Thailand</a>
+<a class="btn s" href="https://tdac.immigration.go.th/">Thai TDAC</a>
+<a class="btn s" href="https://indianvisaonline.gov.in/evisa/tvoa.html">India</a>
+<a class="btn s" href="https://etravel.gov.ph/">PH eTravel</a>
+</div>
+<div class="card">
+<h2>Sights & markets worth planning around</h2>
+<p>Thailand: Grand Palace, Chiang Mai old city, Chatuchak. Vietnam: Hoi An, Ninh Binh, Bến Thành. Cambodia: Angkor. Taiwan: night markets + Taroko. India: Rishikesh, Kerala backwaters.</p>
+</div>
+</main>
+<script>
+const d=new Date();d.setDate(d.getDate()+28);
+document.getElementById("dt").value=d.toISOString().slice(0,10);
+function go(){
+  const a=fr.value,b=to.value,c=dt.value,s=c.slice(2).replaceAll("-","");
+  const q=encodeURIComponent("Flights from "+a+" to "+b+" on "+c);
+  links.innerHTML=
+    `<a class="btn" href="https://www.google.com/travel/flights?q=${q}" target="_blank">Google Flights</a>`+
+    `<a class="btn s" href="https://www.kayak.com/flights/${a}-${b}/${c}" target="_blank">Kayak</a>`+
+    `<a class="btn s" href="https://www.skyscanner.net/transport/flights/${a.toLowerCase()}/${b.toLowerCase()}/${s}/" target="_blank">Skyscanner</a>`+
+    `<a class="btn s" href="https://www.kiwi.com/en/search/results/${a}/${b}/${c}" target="_blank">Kiwi</a>`;
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
