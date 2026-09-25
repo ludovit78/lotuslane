@@ -563,9 +563,9 @@
         <h3>Trip budget lab</h3>
         <form class="plan-form" id="budForm">
           <div><label class="s" style="color:var(--muted)">Days</label><input type="number" id="bDays" min="3" max="365" value="30" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Daily spend USD</label><input type="number" id="bDaily" min="10" max="400" value="40" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Flights (return) USD</label><input type="number" id="bFly" min="0" max="4000" value="650" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Visas + shots USD</label><input type="number" id="bVisa" min="0" max="800" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Daily spend (enter USD)</label><input type="number" id="bDaily" min="10" max="400" value="40" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Flights return (enter USD)</label><input type="number" id="bFly" min="0" max="4000" value="650" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Visas + shots (enter USD)</label><input type="number" id="bVisa" min="0" max="800" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Calculate</button></div>
         </form>
         <div id="budOut" class="tool-out"></div>
@@ -1565,6 +1565,9 @@ async function loadRates() {
   }
   renderRatesBar();
   if (typeof renderCards === "function") renderCards();
+  if (typeof renderBudget === "function") renderBudget();
+  if (typeof renderMove === "function") renderMove();
+  if (typeof renderPlay === "function") renderPlay();
 }
 (function restoreFx() {
   try {
@@ -1608,6 +1611,7 @@ $$("[data-go]").forEach(b => b.addEventListener("click", e => {
   const t = b.dataset.go;
   if (t === "explore") renderCards();
   if (t === "visa") renderVisa();
+  if (t === "tools") renderBudget();
   go(t);
 }));
 
@@ -2038,6 +2042,8 @@ function renderSeasons() {
   }).join("");
 }
 function renderBudget() {
+  const out = $("#budOut");
+  if (!out || !$("#bDays")) return;
   const days = +$("#bDays").value || 30;
   const daily = +$("#bDaily").value || 40;
   const fly = +$("#bFly").value || 0;
@@ -2045,14 +2051,22 @@ function renderBudget() {
   const ground = days * daily;
   const total = ground + fly + visa;
   const pad = total * 0.12;
-  $("#budOut").innerHTML = `<div class="split3">
+  const code = curCode();
+  out.innerHTML = `<div class="split3">
     <div class="stat"><span>On the ground</span><b class="big-stat">${money(ground)}</b></div>
     <div class="stat"><span>Flights + visas</span><b>${money(fly+visa)}</b></div>
     <div class="stat"><span>Trip + 12% buffer</span><b class="big-stat">${money(total+pad)}</b></div>
   </div>
-  <p class="meta" style="margin-top:10px">${days} days × ${money(daily)}/day. Buffer covers ATM fees, a missed bus, and one nicer meal.</p>`;
+  <p class="meta" style="margin-top:10px">${days} days × ${money(daily)}/day in <b>${code}</b> at 1 USD = £${FX.GBP.toFixed(4)} · €${FX.EUR.toFixed(4)}. Inputs stay in USD; totals switch with the rate bar.</p>`;
 }
-$("#budForm").addEventListener("submit", e => { e.preventDefault(); renderBudget(); });
+const budForm = $("#budForm");
+if (budForm) {
+  budForm.addEventListener("submit", e => { e.preventDefault(); renderBudget(); });
+  ["bDays","bDaily","bFly","bVisa"].forEach(id => {
+    const el = $("#"+id);
+    if (el) el.addEventListener("input", renderBudget);
+  });
+}
 
 (function themeInit(){
   const saved = localStorage.getItem("lotuslane_theme") || "day";
