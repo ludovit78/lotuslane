@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>LotusLane — Budget vegan travel across Asia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>LotusLane</title>
   <meta name="description" content="Visa-smart, vegan-first, budget travel planner for Asia. Official e-visa links, itineraries, scooters, ferries and restaurants." />
-  <meta name="theme-color" content="#0b3d2e" />
+  <meta name="theme-color" content="#0c3b2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="LotusLane" />
+  <meta name="format-detection" content="telephone=no" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="icon" href="icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -52,9 +56,10 @@
       --shadow: 0 18px 50px rgba(0,0,0,.35);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { min-height: 100%; }
+    html, body { min-height: 100%; min-height: 100dvh; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: "Source Sans 3", system-ui, sans-serif;
+      font-family: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background:
         radial-gradient(900px 520px at 8% -8%, rgba(47,143,107,.22), transparent 55%),
         radial-gradient(800px 480px at 100% 0%, rgba(196,92,106,.16), transparent 48%),
@@ -62,7 +67,12 @@
         var(--bg);
       color: var(--ink);
       line-height: 1.55;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      padding-bottom: calc(64px + env(safe-area-inset-bottom));
     }
+    button, a, .chip, .feature { touch-action: manipulation; }
+    select, input { font-size: 16px !important; } /* stops iOS zoom-on-focus */
     body::before {
       content:"";
       pointer-events:none;
@@ -79,6 +89,7 @@
       backdrop-filter: blur(18px) saturate(1.2);
       background: var(--glass);
       border-bottom: 1px solid var(--line);
+      padding-top: env(safe-area-inset-top);
     }
     .nav { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
     .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; }
@@ -113,7 +124,9 @@
     }
     .passport-card::after {
       content:"🪷"; position:absolute; right:-8px; bottom:-18px; font-size:96px; opacity:.12;
+      pointer-events: none;
     }
+    .passport-card .cta { position: relative; z-index: 2; }
     .passport-card h2 { font-size: 1.35rem; margin-bottom: 6px; }
     .passport-card p { opacity: .82; font-size: .92rem; margin-bottom: 14px; }
     .row { display: grid; gap: 10px; }
@@ -180,11 +193,34 @@
     footer { border-top: 1px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: .88rem; }
     @media (max-width: 860px) {
       .hero, .detail, .stats { grid-template-columns: 1fr; }
-      nav.links { display: none; }
+      nav.links, header.app .cta { display: none; }
       .mobile-nav { display: flex !important; }
+      .panel { padding-bottom: 28px; }
+      .btn, .cta, #unlockBtn { min-height: 48px; font-size: 1.02rem; }
+      .chip { min-height: 36px; }
     }
-    .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fffdf8; border-top: 1px solid var(--line); justify-content: space-around; padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); z-index: 50; }
-    .mobile-nav button { border: 0; background: 0; font-size: .72rem; font-weight: 700; }
+    .mobile-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(255,253,248,.94); backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      justify-content: space-around; align-items: flex-end;
+      padding: 6px 4px calc(8px + env(safe-area-inset-bottom));
+      z-index: 50;
+    }
+    .mobile-nav button {
+      border: 0; background: 0; font-size: .64rem; font-weight: 700;
+      min-width: 56px; min-height: 44px; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .mobile-nav button.active { color: var(--green); }
+    .mobile-nav button span { font-size: 1.15rem; line-height: 1; }
+    .install-sheet {
+      position: fixed; left: 12px; right: 12px; bottom: calc(78px + env(safe-area-inset-bottom));
+      background: #0c3b2e; color: #f6f1e6; border-radius: 18px; padding: 14px 16px;
+      box-shadow: var(--shadow); z-index: 60;
+    }
+    .install-sheet b { display: block; font-family: Fraunces, Georgia, serif; margin-bottom: 4px; }
+    .standalone .install-sheet, .standalone #installHint { display: none !important; }
     .hidden { display: none !important; }
     .plan-form { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
     @media (max-width: 860px) { .plan-form { grid-template-columns: 1fr 1fr; } }
@@ -286,7 +322,15 @@
               <label class="s">Trip start</label>
               <input type="date" id="start" />
             </div>
-            <button class="cta" type="submit">Unlock my Asia map</button>
+            <div>
+              <label class="s">Show prices in</label>
+              <select id="cur">
+                <option value="GBP">British pound £</option>
+                <option value="EUR">Euro €</option>
+                <option value="USD">US dollar $</option>
+              </select>
+            </div>
+            <button class="cta" type="button" id="unlockBtn" onclick="unlockMap()">Unlock my Asia map</button>
           </div>
         </form>
       </div>
@@ -616,12 +660,19 @@
     </section>
   </main>
 
+  <div class="install-sheet" id="installSheet">
+    <b>Add LotusLane to your iPhone</b>
+    Tap Share (the square with the arrow) → <b>Add to Home Screen</b>. Then open it from the lotus icon. It runs full-screen like an app.
+    <div class="actions" style="margin-top:8px">
+      <button class="btn s" type="button" id="dismissInstall">Got it</button>
+    </div>
+  </div>
   <nav class="mobile-nav">
-    <button data-go="home">Home</button>
-    <button data-go="explore">Map</button>
-    <button data-go="fly">Fly</button>
-    <button data-go="play">Play</button>
-    <button data-go="tools">Tools</button>
+    <button data-go="home"><span>🏠</span>Home</button>
+    <button data-go="explore"><span>🗺️</span>Map</button>
+    <button data-go="fly"><span>✈️</span>Fly</button>
+    <button data-go="play"><span>🧘</span>Play</button>
+    <button data-go="tools"><span>🧰</span>Tools</button>
   </nav>
 
   <footer>
@@ -1453,27 +1504,41 @@ function visaFor(nat, id) {
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-const state = JSON.parse(localStorage.getItem("lotuslane") || "{}");
+let state = {};
+try { state = JSON.parse(localStorage.getItem("lotuslane") || "{}") || {}; } catch (e) { state = {}; }
+if (!state.cur) state.cur = "GBP";
 
 const FX = { USD: 1, GBP: 0.78, EUR: 0.92, date: "fallback", source: "offline estimate", live: false };
 function gbp(n) { return n * FX.GBP; }
 function eur(n) { return n * FX.EUR; }
+function curCode() { return state.cur || ($("#cur") && $("#cur").value) || "GBP"; }
+function fmt(usd) {
+  const n = +usd || 0;
+  const c = curCode();
+  if (c === "GBP") return "£" + gbp(n).toFixed(0);
+  if (c === "EUR") return "€" + eur(n).toFixed(0);
+  return "$" + n.toFixed(0);
+}
 function money(usd, extra=true) {
-  const g = gbp(usd), e = eur(usd);
-  const core = `$${usd}`;
-  if (!extra) return core;
-  return `<span class="fx">${core}<small>£${g.toFixed(0)} · €${e.toFixed(0)}</small></span>`;
+  const n = +usd || 0;
+  const main = fmt(n);
+  if (!extra) return main;
+  return `<span class="fx">${main}<small>$ ${n.toFixed(0)} · £${gbp(n).toFixed(0)} · €${eur(n).toFixed(0)}</small></span>`;
 }
 function moneyRange(a, b) {
-  return `<span class="fx">$${a}–${b}<small>£${gbp(a).toFixed(0)}–${gbp(b).toFixed(0)} · €${eur(a).toFixed(0)}–${eur(b).toFixed(0)}</small></span>`;
+  return `<span class="fx">${fmt(a)}–${fmt(b)}<small>$ ${a}–${b} · £${gbp(a).toFixed(0)}–${gbp(b).toFixed(0)} · €${eur(a).toFixed(0)}–${eur(b).toFixed(0)}</small></span>`;
 }
 function renderRatesBar() {
   const el = $("#ratesBar");
   if (!el) return;
   const stamp = FX.live ? `Live ${FX.date}` : `Cached ${FX.date}`;
-  el.innerHTML = `<b>1 USD</b> = <b>£${FX.GBP.toFixed(4)}</b> · <b>€${FX.EUR.toFixed(4)}</b>
-    <span class="meta">${stamp} · ${FX.source}. All trip prices show USD + pound + euro.</span>
+  el.innerHTML = `<b>Prices in ${curCode()}</b>
+    <button class="chip ${curCode()==="GBP"?"on":""}" type="button" data-cur="GBP">£ GBP</button>
+    <button class="chip ${curCode()==="EUR"?"on":""}" type="button" data-cur="EUR">€ EUR</button>
+    <button class="chip ${curCode()==="USD"?"on":""}" type="button" data-cur="USD">$ USD</button>
+    <span class="meta">1 USD = £${FX.GBP.toFixed(4)} · €${FX.EUR.toFixed(4)} · ${stamp}</span>
     <button class="chip" id="fxReload" type="button">Refresh rates</button>`;
+  $$("#ratesBar [data-cur]").forEach(b => b.onclick = () => setCur(b.dataset.cur));
   const btn = $("#fxReload");
   if (btn) btn.onclick = loadRates;
   const scoot = $("#statScoot");
@@ -1523,24 +1588,32 @@ async function loadRates() {
 
 function save() { localStorage.setItem("lotuslane", JSON.stringify(state)); }
 
-NATS.forEach(([c,n]) => {
-  const o = document.createElement("option");
-  o.value = c; o.textContent = n;
-  if (state.nat === c) o.selected = true;
-  $("#nat").appendChild(o);
-});
-if (state.diet) $("#diet").value = state.diet;
-if (state.budget) $("#budget").value = state.budget;
-if (state.start) $("#start").value = state.start;
+(function fillPassports() {
+  const sel = $("#nat");
+  if (!sel) return;
+  NATS.forEach(([c,n]) => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = n;
+    if ((state.nat || "SK") === c) o.selected = true;
+    sel.appendChild(o);
+  });
+})();
+if (state.diet && $("#diet")) $("#diet").value = state.diet;
+if (state.budget && $("#budget")) $("#budget").value = state.budget;
+if (state.cur && $("#cur")) $("#cur").value = state.cur;
+if (state.start && $("#start")) $("#start").value = state.start;
 else {
   const d = new Date(); d.setDate(d.getDate()+21);
   $("#start").value = d.toISOString().slice(0,10);
 }
 
 function go(id) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
   $$(".panel").forEach(p => p.classList.remove("on"));
-  $("#"+id).classList.add("on");
+  panel.classList.add("on");
   $$("nav.links button").forEach(b => b.classList.toggle("active", b.dataset.go === id));
+  $$(".mobile-nav button").forEach(b => b.classList.toggle("active", b.dataset.go === id));
   window.scrollTo({top:0, behavior:"smooth"});
 }
 $$("[data-go]").forEach(b => b.addEventListener("click", e => {
@@ -1551,16 +1624,33 @@ $$("[data-go]").forEach(b => b.addEventListener("click", e => {
   go(t);
 }));
 
-$("#passportForm").addEventListener("submit", e => {
-  e.preventDefault();
-  state.nat = $("#nat").value;
-  state.diet = $("#diet").value;
-  state.budget = $("#budget").value;
-  state.start = $("#start").value;
+function setCur(code) {
+  state.cur = code;
+  const sel = $("#cur");
+  if (sel) sel.value = code;
   save();
-  renderCards();
-  go("explore");
-});
+  try { renderRatesBar(); renderCards(); renderPlay(); renderBudget(); renderMove(); } catch (err) {}
+}
+function unlockMap(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const nat = $("#nat");
+  if (nat && !nat.value) nat.value = "SK";
+  state.nat = ($("#nat") && $("#nat").value) || "SK";
+  state.diet = ($("#diet") && $("#diet").value) || "vegan";
+  state.budget = ($("#budget") && $("#budget").value) || "40";
+  state.cur = ($("#cur") && $("#cur").value) || state.cur || "GBP";
+  state.start = ($("#start") && $("#start").value) || "";
+  save();
+  try { renderRatesBar(); renderCards(); } catch (err) { console.error(err); }
+  const panel = document.getElementById("explore");
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("on"));
+  if (panel) panel.classList.add("on");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+const pf = $("#passportForm");
+if (pf) pf.addEventListener("submit", unlockMap);
+const ub = $("#unlockBtn");
+if (ub) ub.addEventListener("click", unlockMap);
 
 let filter = "all";
 $$("#explore .chip").forEach(c => c.addEventListener("click", () => {
@@ -1569,7 +1659,8 @@ $$("#explore .chip").forEach(c => c.addEventListener("click", () => {
   filter = c.dataset.f;
   renderCards();
 }));
-$("#q").addEventListener("input", renderCards);
+if ($("#q")) $("#q").addEventListener("input", renderCards);
+if ($("#cur")) $("#cur").addEventListener("change", () => setCur($("#cur").value));
 
 function pill(v) {
   const map = {vf:["pill vf","Visa-free"], vo:["pill vo","Visa on arrival"], ev:["pill ev","e-Visa"], vr:["pill vr","Visa required"]};
@@ -1972,6 +2063,19 @@ renderSights();
 renderPlay();
 loadRates();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+(function iphoneAppMode(){
+  const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  if (standalone) document.body.classList.add("standalone");
+  const sheet = document.getElementById("installSheet");
+  if (standalone || localStorage.getItem("lotuslane_hide_install") === "1") {
+    if (sheet) sheet.style.display = "none";
+  }
+  const d = document.getElementById("dismissInstall");
+  if (d) d.onclick = () => {
+    localStorage.setItem("lotuslane_hide_install", "1");
+    if (sheet) sheet.style.display = "none";
+  };
+})();
 </script>
 </body>
 </html>
