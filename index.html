@@ -21,27 +21,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #f3eee4;
-      --bg-2: #e8dcc8;
+      --bg: #f6efe4;
+      --bg-2: #ead7c0;
       --ink: #12231c;
       --muted: #5a6a62;
-      --green: #0c3b2e;
-      --green-2: #1a6b52;
+      --green: #0b6b4f;
+      --green-2: #1a8f68;
       --leaf: #2f8f6b;
-      --gold: #c9842a;
-      --gold-soft: #f0d7a8;
-      --lotus: #c45c6a;
-      --card: rgba(255,253,248,.86);
-      --line: #e3d6c0;
+      --gold: #e09a2b;
+      --gold-soft: #f6d9a0;
+      --lotus: #e25d72;
+      --teal: #0e8f9a;
+      --indigo: #3b5bdb;
+      --card: rgba(255,252,247,.92);
+      --line: #e4d3bc;
       --good: #1b7a4a;
       --warn: #b45309;
       --bad: #9b2c2c;
       --ok: #1b7a4a;
       --mid: #b45309;
       --no: #9b2c2c;
-      --shadow: 0 18px 50px rgba(18,35,28,.10);
+      --shadow: 0 18px 50px rgba(18,35,28,.12);
       --r: 22px;
-      --glass: rgba(255,253,248,.55);
+      --glass: rgba(255,250,242,.72);
     }
     [data-theme="night"] {
       --bg: #0d1612;
@@ -61,9 +63,9 @@
     body {
       font-family: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background:
-        radial-gradient(900px 520px at 8% -8%, rgba(47,143,107,.22), transparent 55%),
-        radial-gradient(800px 480px at 100% 0%, rgba(196,92,106,.16), transparent 48%),
-        radial-gradient(700px 400px at 70% 110%, rgba(201,132,42,.14), transparent 50%),
+        radial-gradient(900px 520px at 8% -8%, rgba(14,143,154,.22), transparent 55%),
+        radial-gradient(800px 480px at 100% 0%, rgba(226,93,114,.20), transparent 48%),
+        radial-gradient(700px 400px at 70% 110%, rgba(224,154,43,.22), transparent 50%),
         var(--bg);
       color: var(--ink);
       line-height: 1.55;
@@ -139,11 +141,14 @@
     .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
     .stat b { display: block; font-size: 1.3rem; }
     .stat span { color: var(--muted); font-size: .86rem; }
-    .panel { display: none; padding: 8px 0 60px; }
-    .panel.on { display: block; }
+    .panel { display: none; padding: 8px 0 60px; animation: none; }
+    .panel.on { display: block; animation: rise .28s ease; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes pop { from { transform: scale(.96); } to { transform: none; } }
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 16px; align-items: center; }
-    .chip { border: 1px solid var(--line); background: #fff; padding: 7px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; }
-    .chip.on { background: var(--green); color: #fff; border-color: var(--green); }
+    .chip { border: 1px solid var(--line); background: #fff; padding: 7px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; transition: transform .15s ease, background .15s ease; }
+    .chip:active { transform: scale(.96); }
+    .chip.on { background: linear-gradient(135deg, var(--green), var(--teal)); color: #fff; border-color: transparent; }
     .search { flex: 1; min-width: 180px; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 14px; }
     .card {
@@ -174,9 +179,12 @@
     .bd { background: #f1f5f9; color: #334155; }
     .meta { color: var(--muted); font-size: .9rem; }
     .actions { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
-    .btn { border: 0; border-radius: 12px; padding: 9px 12px; font-weight: 700; cursor: pointer; }
-    .btn.p { background: var(--green); color: #fff; }
+    .btn { border: 0; border-radius: 12px; padding: 9px 12px; font-weight: 700; cursor: pointer; transition: transform .15s ease; }
+    .btn:active { transform: scale(.97); }
+    .btn.p { background: linear-gradient(135deg, var(--green), var(--teal, #0e8f9a)); color: #fff; }
     .btn.s { background: #efe6d6; color: var(--ink); }
+    .heart { border:0; background:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; box-shadow:var(--shadow); }
+    .heart.on { background:#ffe4ea; }
     .detail { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; }
     .box { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
     .box h3 { margin-bottom: 8px; }
@@ -215,7 +223,7 @@
       display: flex; flex-direction: column; align-items: center; gap: 2px;
       pointer-events: auto;
     }
-    .mobile-nav button.active { color: var(--green); }
+    .mobile-nav button.active { color: var(--lotus); }
     .mobile-nav button span { font-size: 1.15rem; line-height: 1; pointer-events: none; }
     .install-sheet, #installHint { display: none !important; }
     .hidden { display: none !important; }
@@ -356,6 +364,11 @@
       </div>
       <div class="alert" style="margin-top:16px">
         Thailand’s visa-exempt stay for many nationalities dropped to <b>30 days from 15 September 2026</b>. Always confirm on the official embassy / immigration site before you fly. LotusLane is a planner, not a visa agent.
+      </div>
+      <div class="box" style="margin-top:14px;background:linear-gradient(135deg,#fff8ee,#e7f7f4)">
+        <h3>How this sits next to the big apps</h3>
+        <p class="meta">Wanderlog owns shared day lists. Nomads.com ranks cities for Wi‑Fi. Klook sells tickets. HappyCow maps vegan food. LotusLane is the layer they skip: <b>passport + vegan + budget + official visas</b>, then it hands you those apps for live prices.</p>
+        <p class="meta" style="margin-top:8px">Still missing vs them: group editing, Gmail import, offline vector maps, live fare APIs (they don’t publish those without paid keys). Hearts save favourites on this phone.</p>
       </div>
       
       <div class="feature-grid">
@@ -1871,11 +1884,20 @@ function renderCards() {
           <button class="btn p" data-open="${c.id}">Open</button>
           <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Rooms</a>
           <a class="btn s" href="${c.links.flights}" target="_blank" rel="noopener">Flights</a>
+          <button class="heart ${(state.favs||[]).includes(c.id)?"on":""}" type="button" data-fav="${c.id}">${(state.favs||[]).includes(c.id)?"♥":"♡"}</button>
         </div>
       </div>
     </article>`;
   }).join("") || `<p class="meta">No matches. Clear filters.</p>`;
   $$("[data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
+  $$("[data-fav]").forEach(b => b.onclick = ev => { ev.stopPropagation(); toggleFav(b.dataset.fav); });
+}
+function toggleFav(id) {
+  state.favs = state.favs || [];
+  if (state.favs.includes(id)) state.favs = state.favs.filter(x => x !== id);
+  else state.favs.push(id);
+  save();
+  renderCards();
 }
 
 function mapQuery(place) {
