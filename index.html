@@ -324,6 +324,15 @@
                 <option value="GBP">British pound £</option>
                 <option value="EUR">Euro €</option>
                 <option value="USD">US dollar $</option>
+                <option value="THB">Thai baht ฿</option>
+                <option value="VND">Vietnam dong ₫</option>
+                <option value="IDR">Indonesia rupiah</option>
+                <option value="MYR">Malaysia ringgit</option>
+                <option value="PHP">Philippine peso</option>
+                <option value="SGD">Singapore dollar</option>
+                <option value="INR">Indian rupee</option>
+                <option value="JPY">Japanese yen</option>
+                <option value="KRW">Korean won</option>
               </select>
             </div>
             <button class="cta" type="button" id="unlockBtn" onclick="unlockMap()">Unlock my Asia map</button>
@@ -563,9 +572,9 @@
         <h3>Trip budget lab</h3>
         <form class="plan-form" id="budForm">
           <div><label class="s" style="color:var(--muted)">Days</label><input type="number" id="bDays" min="3" max="365" value="30" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Daily spend (enter USD)</label><input type="number" id="bDaily" min="10" max="400" value="40" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Flights return (enter USD)</label><input type="number" id="bFly" min="0" max="4000" value="650" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Visas + shots (enter USD)</label><input type="number" id="bVisa" min="0" max="800" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" id="labDaily" style="color:var(--muted)">Daily spend</label><input type="number" id="bDaily" min="0" max="20000000" value="40" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" id="labFly" style="color:var(--muted)">Flights return</label><input type="number" id="bFly" min="0" max="20000000" value="650" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" id="labVisa" style="color:var(--muted)">Visas + shots</label><input type="number" id="bVisa" min="0" max="20000000" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Calculate</button></div>
         </form>
         <div id="budOut" class="tool-out"></div>
@@ -1495,39 +1504,72 @@ let state = {};
 try { state = JSON.parse(localStorage.getItem("lotuslane") || "{}") || {}; } catch (e) { state = {}; }
 if (!state.cur) state.cur = "GBP";
 
-const FX = { USD: 1, GBP: 0.78, EUR: 0.92, date: "fallback", source: "offline estimate", live: false };
-function gbp(n) { return n * FX.GBP; }
-function eur(n) { return n * FX.EUR; }
+const FX = {
+  USD: 1, GBP: 0.78, EUR: 0.92, THB: 36, VND: 25000, IDR: 15500, MYR: 4.7, PHP: 56, SGD: 1.35, INR: 83, JPY: 150, KRW: 1350,
+  date: "fallback", source: "offline estimate", live: false, fetchedAt: 0
+};
+const CUR = [
+  ["GBP","£","Pound"],["EUR","€","Euro"],["USD","$","US dollar"],
+  ["THB","฿","Baht"],["VND","₫","Dong"],["IDR","Rp","Rupiah"],
+  ["MYR","RM","Ringgit"],["PHP","₱","Peso"],["SGD","S$","Singapore $"],
+  ["INR","₹","Rupee"],["JPY","¥","Yen"],["KRW","₩","Won"]
+];
+function rate(code) { return FX[code] || 1; }
+function gbp(n) { return n * rate("GBP"); }
+function eur(n) { return n * rate("EUR"); }
 function curCode() { return state.cur || ($("#cur") && $("#cur").value) || "GBP"; }
-function fmt(usd) {
-  const n = +usd || 0;
-  const c = curCode();
-  if (c === "GBP") return "£" + gbp(n).toFixed(0);
-  if (c === "EUR") return "€" + eur(n).toFixed(0);
-  return "$" + n.toFixed(0);
+function toCur(usd, code) {
+  const n = (+usd || 0) * rate(code || curCode());
+  const c = code || curCode();
+  if (c === "VND" || c === "IDR" || c === "KRW" || c === "JPY") return Math.round(n);
+  if (n >= 100) return Math.round(n);
+  return Math.round(n * 100) / 100;
+}
+function fmt(usd, code) {
+  const c = code || curCode();
+  const row = CUR.find(x => x[0] === c) || ["USD","$",""];
+  const v = toCur(usd, c);
+  return row[1] + (Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2));
 }
 function money(usd, extra=true) {
   const n = +usd || 0;
   const main = fmt(n);
   if (!extra) return main;
-  return `<span class="fx">${main}<small>$ ${n.toFixed(0)} · £${gbp(n).toFixed(0)} · €${eur(n).toFixed(0)}</small></span>`;
+  return `<span class="fx">${main}<small>$ ${n.toFixed(0)} · £${toCur(n,"GBP")} · €${toCur(n,"EUR")}</small></span>`;
 }
 function moneyRange(a, b) {
-  return `<span class="fx">${fmt(a)}–${fmt(b)}<small>$ ${a}–${b} · £${gbp(a).toFixed(0)}–${gbp(b).toFixed(0)} · €${eur(a).toFixed(0)}–${eur(b).toFixed(0)}</small></span>`;
+  return `<span class="fx">${fmt(a)}–${fmt(b)}<small>$ ${a}–${b} · £${toCur(a,"GBP")}–${toCur(b,"GBP")} · €${toCur(a,"EUR")}–${toCur(b,"EUR")}</small></span>`;
+}
+function applyRates(rates, meta) {
+  if (!rates) return false;
+  const g = rates.GBP || rates.gbp;
+  const e = rates.EUR || rates.eur;
+  if (!g || !e) return false;
+  CUR.forEach(([c]) => {
+    const v = rates[c] || rates[c.toLowerCase()];
+    if (v) FX[c] = +v;
+  });
+  FX.USD = 1;
+  FX.date = meta.date || new Date().toISOString().slice(0,10);
+  FX.source = meta.source;
+  FX.live = true;
+  FX.fetchedAt = Date.now();
+  localStorage.setItem("lotuslane_fx", JSON.stringify(FX));
+  return true;
 }
 function renderRatesBar() {
   const el = $("#ratesBar");
   if (!el) return;
   const stamp = FX.live ? `Live ${FX.date}` : `Cached ${FX.date}`;
+  const chips = CUR.slice(0,3).map(([c,s]) => `<button class="chip ${curCode()===c?"on":""}" type="button" data-cur="${c}">${s} ${c}</button>`).join("");
+  const asia = `฿${toCur(1,"THB")} · ₫${toCur(1,"VND").toLocaleString()} · Rp${toCur(1,"IDR").toLocaleString()} · ₹${toCur(1,"INR")} · ¥${toCur(1,"JPY")}`;
   el.innerHTML = `<b>Prices in ${curCode()}</b>
-    <button class="chip ${curCode()==="GBP"?"on":""}" type="button" data-cur="GBP">£ GBP</button>
-    <button class="chip ${curCode()==="EUR"?"on":""}" type="button" data-cur="EUR">€ EUR</button>
-    <button class="chip ${curCode()==="USD"?"on":""}" type="button" data-cur="USD">$ USD</button>
-    <span class="meta">1 USD = £${FX.GBP.toFixed(4)} · €${FX.EUR.toFixed(4)} · ${stamp}</span>
+    ${chips}
+    <span class="meta">1 USD = £${rate("GBP").toFixed(4)} · €${rate("EUR").toFixed(4)} · ${asia} · ${stamp} · ${FX.source}</span>
     <button class="chip" id="fxReload" type="button">Refresh rates</button>`;
   $$("#ratesBar [data-cur]").forEach(b => b.onclick = () => setCur(b.dataset.cur));
   const btn = $("#fxReload");
-  if (btn) btn.onclick = loadRates;
+  if (btn) btn.onclick = () => loadRates(true);
   const scoot = $("#statScoot");
   if (scoot) scoot.innerHTML = moneyRange(4,10);
   const sel = $("#budget");
@@ -1535,46 +1577,59 @@ function renderRatesBar() {
     const v = sel.value;
     [...sel.options].forEach(o => {
       const n = +o.value;
-      o.textContent = `${o.value === "25" ? "Backpacker" : o.value === "40" ? "Lean mid" : o.value === "70" ? "Comfort" : "Flashpacker"} · ${money(n,false)} / £${gbp(n).toFixed(0)} / €${eur(n).toFixed(0)}`;
+      o.textContent = `${o.value === "25" ? "Backpacker" : o.value === "40" ? "Lean mid" : o.value === "70" ? "Comfort" : "Flashpacker"} · ${money(n,false)}`;
     });
     sel.value = v;
   }
 }
-async function loadRates() {
-  const tryUrls = [
-    "https://api.frankfurter.app/latest?from=USD&to=GBP,EUR",
-    "https://api.frankfurter.dev/v1/latest?base=USD&symbols=GBP,EUR",
-    "https://open.er-api.com/v6/latest/USD"
+function parseFxPayload(url, j) {
+  if (j.rates) return j.rates;
+  if (j.usd) {
+    const out = { USD: 1 };
+    Object.keys(j.usd).forEach(k => { out[k.toUpperCase()] = j.usd[k]; });
+    return out;
+  }
+  return null;
+}
+async function loadRates(force) {
+  if (!force && FX.fetchedAt && Date.now() - FX.fetchedAt < 15 * 60 * 1000 && FX.live) {
+    renderRatesBar();
+    if (typeof renderBudget === "function") renderBudget();
+    return;
+  }
+  const sources = [
+    { url: "https://open.er-api.com/v6/latest/USD", name: "open.er-api.com" },
+    { url: "https://api.exchangerate-api.com/v4/latest/USD", name: "exchangerate-api.com" },
+    { url: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json", name: "currency-api / jsDelivr" },
+    { url: "https://api.frankfurter.app/latest?from=USD&to=GBP,EUR,THB,IDR,MYR,PHP,SGD,INR,JPY,KRW", name: "ECB / Frankfurter" }
   ];
-  for (const url of tryUrls) {
+  let ok = false;
+  for (const src of sources) {
     try {
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(src.url, { cache: "no-store" });
       if (!r.ok) continue;
       const j = await r.json();
-      const rates = j.rates || {};
-      if (rates.GBP && rates.EUR) {
-        FX.GBP = rates.GBP;
-        FX.EUR = rates.EUR;
-        FX.date = j.date || new Date().toISOString().slice(0,10);
-        FX.source = url.includes("frankfurter") ? "ECB reference via Frankfurter" : "open.er-api.com";
-        FX.live = true;
-        localStorage.setItem("lotuslane_fx", JSON.stringify({ GBP: FX.GBP, EUR: FX.EUR, date: FX.date, source: FX.source }));
+      const rates = parseFxPayload(src.url, j);
+      if (applyRates(rates, { date: j.date || j.time_last_update_utc || new Date().toISOString().slice(0,10), source: src.name })) {
+        ok = true;
         break;
       }
-    } catch (e) { /* next source */ }
+    } catch (e) { /* next */ }
   }
   renderRatesBar();
   if (typeof renderCards === "function") renderCards();
   if (typeof renderBudget === "function") renderBudget();
   if (typeof renderMove === "function") renderMove();
   if (typeof renderPlay === "function") renderPlay();
+  return ok;
 }
 (function restoreFx() {
   try {
     const s = JSON.parse(localStorage.getItem("lotuslane_fx") || "null");
-    if (s && s.GBP && s.EUR) { FX.GBP = s.GBP; FX.EUR = s.EUR; FX.date = s.date; FX.source = s.source + " (saved)"; }
+    if (s && s.GBP && s.EUR) Object.assign(FX, s, { source: (s.source || "") + " (saved)" });
   } catch (e) {}
 })();
+setInterval(() => { if (document.visibilityState === "visible") loadRates(false); }, 30 * 60 * 1000);
 
 function save() { localStorage.setItem("lotuslane", JSON.stringify(state)); }
 
@@ -1616,10 +1671,12 @@ $$("[data-go]").forEach(b => b.addEventListener("click", e => {
 }));
 
 function setCur(code) {
+  pullBudgetUSD();
   state.cur = code;
   const sel = $("#cur");
   if (sel) sel.value = code;
   save();
+  pushBudgetInputs();
   try { renderRatesBar(); renderCards(); renderPlay(); renderBudget(); renderMove(); } catch (err) {}
 }
 function unlockMap(e) {
@@ -2041,13 +2098,36 @@ function renderSeasons() {
     return `<p style="margin:12px 0 4px"><b>${s.n}</b></p><div class="season">${cells}</div>`;
   }).join("");
 }
+const budUSD = { daily: 40, fly: 650, visa: 80 };
+function curLabel() {
+  const row = CUR.find(x => x[0] === curCode());
+  return row ? `${row[2]} (${row[1]} ${row[0]})` : curCode();
+}
+function pullBudgetUSD() {
+  const r = rate(curCode()) || 1;
+  if ($("#bDaily")) budUSD.daily = (+$("#bDaily").value || 0) / r;
+  if ($("#bFly")) budUSD.fly = (+$("#bFly").value || 0) / r;
+  if ($("#bVisa")) budUSD.visa = (+$("#bVisa").value || 0) / r;
+}
+function pushBudgetInputs() {
+  const r = rate(curCode()) || 1;
+  const paint = n => (n * r >= 100 ? Math.round(n * r) : Math.round(n * r * 100) / 100);
+  if ($("#bDaily")) $("#bDaily").value = paint(budUSD.daily);
+  if ($("#bFly")) $("#bFly").value = paint(budUSD.fly);
+  if ($("#bVisa")) $("#bVisa").value = paint(budUSD.visa);
+  const lab = curLabel();
+  if ($("#labDaily")) $("#labDaily").textContent = "Daily spend · " + lab;
+  if ($("#labFly")) $("#labFly").textContent = "Flights return · " + lab;
+  if ($("#labVisa")) $("#labVisa").textContent = "Visas + shots · " + lab;
+}
 function renderBudget() {
   const out = $("#budOut");
   if (!out || !$("#bDays")) return;
+  pullBudgetUSD();
   const days = +$("#bDays").value || 30;
-  const daily = +$("#bDaily").value || 40;
-  const fly = +$("#bFly").value || 0;
-  const visa = +$("#bVisa").value || 0;
+  const daily = budUSD.daily;
+  const fly = budUSD.fly;
+  const visa = budUSD.visa;
   const ground = days * daily;
   const total = ground + fly + visa;
   const pad = total * 0.12;
@@ -2057,7 +2137,7 @@ function renderBudget() {
     <div class="stat"><span>Flights + visas</span><b>${money(fly+visa)}</b></div>
     <div class="stat"><span>Trip + 12% buffer</span><b class="big-stat">${money(total+pad)}</b></div>
   </div>
-  <p class="meta" style="margin-top:10px">${days} days × ${money(daily)}/day in <b>${code}</b> at 1 USD = £${FX.GBP.toFixed(4)} · €${FX.EUR.toFixed(4)}. Inputs stay in USD; totals switch with the rate bar.</p>`;
+  <p class="meta" style="margin-top:10px">${days} days × ${fmt(daily)} / day. Whole lab is in <b>${code}</b>. 1 USD = ${fmt(1,"GBP")} · ${fmt(1,"EUR")}.</p>`;
 }
 const budForm = $("#budForm");
 if (budForm) {
@@ -2085,6 +2165,7 @@ if (budForm) {
 
 renderPack();
 renderSeasons();
+pushBudgetInputs();
 renderBudget();
 renderFly();
 renderSights();
