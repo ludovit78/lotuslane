@@ -256,6 +256,14 @@
     .big-stat { font-family:Fraunces,Georgia,serif; font-size:2rem; }
     .split3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
     @media (max-width:860px){ .split3, .season { grid-template-columns:repeat(4,1fr); } .phrase { grid-template-columns:1fr; } }
+    .proof { display:inline-block; font-size:.68rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; background:#efe6d6; color:#3d2a10; padding:3px 8px; border-radius:999px; }
+    .proof.live { background:#d8f3e4; color:#14532d; }
+    .proof.warn { background:#fff3d6; color:#7c4a03; }
+    .scout-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:860px){ .scout-grid { grid-template-columns:1fr; } }
+    .rec-card { border:1px solid var(--line); background:var(--card); border-radius:18px; padding:16px; }
+    .rec-card h3 { margin-bottom:4px; }
+    .why { font-size:.9rem; color:var(--muted); margin:6px 0 10px; }
   </style>
 </head>
 <body>
@@ -265,7 +273,7 @@
       <nav class="links">
         <button data-go="home" class="active">Home</button>
         <button data-go="explore">Countries</button>
-        <button data-go="fly">Flights</button>
+        <button data-go="fly">Scout</button>
         <button data-go="move">Move</button>
         <button data-go="play">Play</button>
         <button data-go="plan">Plan</button>
@@ -359,12 +367,18 @@
         <button class="feature" data-go="play"><div class="ico">🏝️</div><b>Beaches & dive</b><span>Spas, shops, music</span></button>
         <button class="feature" data-go="play"><div class="ico">🧘</div><b>Yoga & sound</b><span>Retreats, temples, gongs</span></button>
         <button class="feature" data-go="plan"><div class="ico">🗺️</div><b>Route builder</b><span>Day-by-day sketch</span></button>
+        <button class="feature" data-go="fly"><div class="ico">🤖</div><b>Scout bot</b><span>Cheap flights, rooms, trains</span></button>
+      </div>
+      <div class="box" style="margin:18px 0 8px">
+        <h3>Smart picks for you</h3>
+        <p class="meta">Scored from your passport, diet and daily budget. Not ads.</p>
+        <div id="homeRecs" class="scout-grid" style="margin-top:12px"></div>
       </div>
     </section>
 
     <section id="fly" class="panel">
-      <h2>Cheapest flights</h2>
-      <p class="meta">Compare the same route on Google Flights, Kayak, Skyscanner and Kiwi. Typical intra-Asia LCC hops (AirAsia, VietJet, Scoot, Cebu Pacific) booked 3–6 weeks out run $30–90 / £23–70 / €28–83 one way.</p>
+      <h2>Scout bot</h2>
+      <p class="meta">Opens the same route on live booking engines. LotusLane never invents a fare. Green = live price on that site. Amber = typical 2026 traveller band only.</p>
       <form class="box plan-form" id="flyForm" style="margin:14px 0">
         <div>
           <label class="s" style="color:var(--muted)">From</label>
@@ -382,11 +396,15 @@
           <label class="s" style="color:var(--muted)">Return (optional)</label>
           <input type="date" id="flyBack" style="background:#fff;color:var(--ink);border:1px solid var(--line)" />
         </div>
+        <div>
+          <label class="s" style="color:var(--muted)">Room nights</label>
+          <input type="number" id="stayNights" min="1" max="60" value="5" style="background:#fff;color:var(--ink);border:1px solid var(--line)" />
+        </div>
         <div style="grid-column:1/-1" class="actions">
-          <button class="btn p" type="submit">Search cheapest</button>
+          <button class="btn p" type="submit">Scout cheapest options</button>
         </div>
       </form>
-      <div id="flyLinks" class="actions" style="margin-bottom:16px"></div>
+      <div id="flyLinks" style="margin-bottom:16px"></div>
       <h3>Usual bargain hops</h3>
       <p class="meta">Tap a route to load it into the search. Fares are typical sale ranges, not live quotes.</p>
       <div class="grid" id="hopGrid" style="margin-top:12px"></div>
@@ -666,7 +684,7 @@
   <nav class="mobile-nav">
     <button data-go="home"><span>🏠</span>Home</button>
     <button data-go="explore"><span>🗺️</span>Map</button>
-    <button data-go="fly"><span>✈️</span>Fly</button>
+    <button data-go="fly"><span>🤖</span>Scout</button>
     <button data-go="play"><span>🧘</span>Play</button>
     <button data-go="tools"><span>🧰</span>Tools</button>
   </nav>
@@ -1667,6 +1685,7 @@ $$("[data-go]").forEach(b => b.addEventListener("click", e => {
   if (t === "explore") renderCards();
   if (t === "visa") renderVisa();
   if (t === "tools") renderBudget();
+  if (t === "home") recommendNow();
   go(t);
 }));
 
@@ -1679,6 +1698,37 @@ function setCur(code) {
   pushBudgetInputs();
   try { renderRatesBar(); renderCards(); renderPlay(); renderBudget(); renderMove(); } catch (err) {}
 }
+function recommendNow() {
+  const box = $("#homeRecs");
+  if (!box) return;
+  const nat = state.nat || ($("#nat") && $("#nat").value) || "SK";
+  const diet = state.diet || "vegan";
+  const budget = +(state.budget || 40);
+  const scored = C.map(c => {
+    const v = visaFor(nat, c.id);
+    let s = 0;
+    if (v.k === "vf") s += 5;
+    else if (v.k === "vo") s += 3;
+    else if (v.k === "ev") s += 2;
+    if (diet !== "flex") s += c.vegan;
+    if (c.budget <= budget) s += 4;
+    else if (c.budget <= budget + 20) s += 1;
+    if (c.region === "sea") s += 1;
+    return {c, v, s};
+  }).sort((a,b) => b.s - a.s).slice(0,4);
+  box.innerHTML = scored.map(({c,v,s}) => `
+    <article class="rec-card">
+      <div class="pills">${pill(v)} ${c.vegan>=4?`<span class="pill vg">Vegan ${c.vegan}/5</span>`:""} <span class="proof">score ${s}</span></div>
+      <h3>${c.flag} ${c.name}</h3>
+      <p class="why">${v.t}. Ground ~${money(c.budget)}/day. ${c.blurb}</p>
+      <div class="actions">
+        <button class="btn p" data-open="${c.id}">Dossier</button>
+        <a class="btn s" href="${c.links.flights}" target="_blank" rel="noopener">Flights</a>
+        <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Rooms</a>
+      </div>
+    </article>`).join("");
+  $$("#homeRecs [data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
+}
 function unlockMap(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   const nat = $("#nat");
@@ -1689,7 +1739,7 @@ function unlockMap(e) {
   state.cur = ($("#cur") && $("#cur").value) || state.cur || "GBP";
   state.start = ($("#start") && $("#start").value) || "";
   save();
-  try { renderRatesBar(); renderCards(); } catch (err) { console.error(err); }
+  try { renderRatesBar(); renderCards(); recommendNow(); } catch (err) { console.error(err); }
   const panel = document.getElementById("explore");
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("on"));
   if (panel) panel.classList.add("on");
@@ -1939,6 +1989,25 @@ function skyDate(iso) {
   const [y,m,d] = iso.split("-");
   return y.slice(2)+m+d;
 }
+const HUB_CITY = {
+  LON:"London",LHR:"London",LGW:"London",MAN:"Manchester",
+  BKK:"Bangkok",CNX:"Chiang Mai",HKT:"Phuket",
+  HAN:"Hanoi",SGN:"Ho Chi Minh City",DAD:"Da Nang",
+  REP:"Siem Reap",PNH:"Phnom Penh",VTE:"Vientiane",LPQ:"Luang Prabang",
+  DPS:"Bali",CGK:"Jakarta",KUL:"Kuala Lumpur",PEN:"Penang",SIN:"Singapore",
+  MNL:"Manila",CEB:"Cebu",
+  NRT:"Tokyo",HND:"Tokyo",KIX:"Osaka",ICN:"Seoul",TPE:"Taipei",HKG:"Hong Kong",
+  DEL:"Delhi",BLR:"Bengaluru",BOM:"Mumbai",KTM:"Kathmandu",CMB:"Colombo",MLE:"Male",
+  TBS:"Tbilisi",ALA:"Almaty",TAS:"Tashkent"
+};
+function slug12(s) {
+  return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function addDays(iso, n) {
+  const d = new Date(iso+"T12:00:00");
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
 function flyUrls(from, to, dep, ret) {
   const q = `Flights from ${from} to ${to} on ${dep}` + (ret ? ` returning ${ret}` : "");
   const kayak = ret ? `https://www.kayak.com/flights/${from}-${to}/${dep}/${ret}` : `https://www.kayak.com/flights/${from}-${to}/${dep}`;
@@ -1948,6 +2017,24 @@ function flyUrls(from, to, dep, ret) {
   const kiwi = `https://www.kiwi.com/en/search/results/${from}/${to}/${dep}${ret?"/"+ret:""}`;
   const gf = `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}`;
   return {gf, kayak, sky, kiwi};
+}
+function stayUrls(city, checkin, nights) {
+  const out = addDays(checkin, nights || 5);
+  const q = encodeURIComponent(city);
+  return {
+    booking: `https://www.booking.com/searchresults.html?ss=${q}&checkin=${checkin}&checkout=${out}&group_adults=1&no_rooms=1`,
+    agoda: `https://www.agoda.com/search?text=${q}&checkIn=${checkin}&los=${nights||5}&rooms=1&adults=1`,
+    hostel: `https://www.hostelworld.com/s?q=${q}&from=${checkin}&to=${out}&guests=1`,
+    airbnb: `https://www.airbnb.com/s/${q}/homes?checkin=${checkin}&checkout=${out}&adults=1`
+  };
+}
+function groundUrls(fromCity, toCity) {
+  const a = slug12(fromCity), b = slug12(toCity);
+  return {
+    go: `https://12go.asia/en/travel/${a}/${b}`,
+    r2r: `https://www.rome2rio.com/map/${encodeURIComponent(fromCity)}/${encodeURIComponent(toCity)}`,
+    baolau: "https://www.baolau.com"
+  };
 }
 function renderFly() {
   const fromSel = $("#flyFrom"), toSel = $("#flyTo");
@@ -1976,18 +2063,87 @@ function renderFly() {
     $("#flyForm").requestSubmit();
   });
 }
-$("#flyForm").addEventListener("submit", e => {
-  e.preventDefault();
+function hopBand(from, to) {
+  const h = HOPS.find(x => x.from === from && x.to === to);
+  if (h) return {lo:h.lo, hi:h.hi, note:h.air+" · "+h.hrs};
+  if (from === "LON" || from === "LHR" || from === "LGW" || from === "MAN") return {lo:380, hi:720, note:"Long-haul sale window, 6–10 weeks out"};
+  return {lo:35, hi:120, note:"Typical Asia LCC one-way if booked early"};
+}
+function runScout() {
   const from = $("#flyFrom").value, to = $("#flyTo").value;
   const dep = $("#flyDate").value, ret = $("#flyBack").value;
+  const nights = +($("#stayNights") && $("#stayNights").value) || 5;
+  const fromCity = HUB_CITY[from] || from;
+  const toCity = HUB_CITY[to] || to;
   const u = flyUrls(from,to,dep,ret);
+  const s = stayUrls(toCity, dep, nights);
+  const g = groundUrls(fromCity, toCity);
+  const band = hopBand(from, to);
+  const roomLo = nights * 12, roomHi = nights * 45;
   $("#flyLinks").innerHTML = `
-    <a class="btn p" href="${u.gf}" target="_blank" rel="noopener">Google Flights</a>
-    <a class="btn s" href="${u.kayak}" target="_blank" rel="noopener">Kayak</a>
-    <a class="btn s" href="${u.sky}" target="_blank" rel="noopener">Skyscanner</a>
-    <a class="btn s" href="${u.kiwi}" target="_blank" rel="noopener">Kiwi</a>
-    <a class="btn s" href="https://www.airasia.com" target="_blank" rel="noopener">AirAsia</a>
-    <a class="btn s" href="https://www.vietjetair.com" target="_blank" rel="noopener">VietJet</a>`;
+    <div class="okbox" style="margin-bottom:12px">
+      Scout for <b>${fromCity} → ${toCity}</b> on <b>${dep}</b>${ret?" · return "+ret:""} · ${nights} nights.
+      <span class="proof live">Live engines</span>
+      <span class="proof warn">Bands are estimates</span>
+    </div>
+    <div class="scout-grid">
+      <div class="box">
+        <h3>Flights</h3>
+        <p class="meta">Typical sale band ${moneyRange(band.lo, band.hi)} · ${band.note}</p>
+        <p class="meta">Proof: the site you open shows today’s fare. LotusLane does not ticket.</p>
+        <div class="actions" style="margin-top:8px">
+          <a class="btn p" href="${u.gf}" target="_blank" rel="noopener">Google Flights</a>
+          <a class="btn s" href="${u.kayak}" target="_blank" rel="noopener">Kayak</a>
+          <a class="btn s" href="${u.sky}" target="_blank" rel="noopener">Skyscanner</a>
+          <a class="btn s" href="${u.kiwi}" target="_blank" rel="noopener">Kiwi</a>
+          <a class="btn s" href="https://www.airasia.com" target="_blank" rel="noopener">AirAsia</a>
+          <a class="btn s" href="https://www.vietjetair.com" target="_blank" rel="noopener">VietJet</a>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Cheapest stays</h3>
+        <p class="meta">Hostel–simple hotel band ${moneyRange(roomLo, roomHi)} for ${nights} nights. Sort by price on the site.</p>
+        <div class="actions" style="margin-top:8px">
+          <a class="btn p" href="${s.agoda}" target="_blank" rel="noopener">Agoda</a>
+          <a class="btn s" href="${s.booking}" target="_blank" rel="noopener">Booking.com</a>
+          <a class="btn s" href="${s.hostel}" target="_blank" rel="noopener">Hostelworld</a>
+          <a class="btn s" href="${s.airbnb}" target="_blank" rel="noopener">Airbnb</a>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Trains · buses · ferries</h3>
+        <p class="meta">12Go and Rome2Rio compare live ground options. Skip the plane when the hop is under ~8 hours on land.</p>
+        <div class="actions" style="margin-top:8px">
+          <a class="btn p" href="${g.go}" target="_blank" rel="noopener">12Go ${fromCity} → ${toCity}</a>
+          <a class="btn s" href="${g.r2r}" target="_blank" rel="noopener">Rome2Rio</a>
+          <a class="btn s" href="${g.baolau}" target="_blank" rel="noopener">Baolau (VN)</a>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Bot recommendation</h3>
+        ${scoutAdvice(from, to, band)}
+      </div>
+    </div>`;
+}
+function scoutAdvice(from, to, band) {
+  const nat = state.nat || ($("#nat") && $("#nat").value) || "SK";
+  const dest = C.find(c => (c.links.flights||"").includes(HUB_CITY[to]||"zzz")) || C.find(c => (HUB_CITY[to]||"").toLowerCase().includes(c.name.toLowerCase().slice(0,4)));
+  const byHub = {BKK:"th",CNX:"th",HKT:"th",HAN:"vn",SGN:"vn",DAD:"vn",REP:"kh",PNH:"kh",VTE:"la",LPQ:"la",DPS:"id",CGK:"id",KUL:"my",PEN:"my",SIN:"sg",MNL:"ph",CEB:"ph",NRT:"jp",HND:"jp",KIX:"jp",ICN:"kr",TPE:"tw",HKG:"hk",DEL:"in",BLR:"in",BOM:"in",KTM:"np",CMB:"lk",MLE:"mv",TBS:"ge"};
+  const c = C.find(x => x.id === byHub[to]);
+  const v = c ? visaFor(nat, c.id) : null;
+  const bits = [];
+  if (from.startsWith("L") && ["BKK","SGN","KUL","SIN","HAN"].includes(to))
+    bits.push("From Britain / Europe, Bangkok or Kuala Lumpur is usually the cheapest long-haul door into SEA. Compare Google Flights with one-stop IST / DOH / AUH.");
+  if (["BKK","CNX","HAN","SGN","KUL","DPS","REP"].includes(to))
+    bits.push("Once inside SEA, AirAsia / VietJet / 12Go buses beat another long-haul. Book the first long-haul, then local hops.");
+  if (c && c.budget <= 40) bits.push(`${c.flag} ${c.name} sits in the lean-budget band ~${money(c.budget)}/day on the ground.`);
+  if (v) bits.push(`Your passport: <b>${v.t}</b>. ${v.d}`);
+  if (band.lo <= 90) bits.push("This hop is in LCC territory. If Google Flights shows over "+fmt(150)+" one-way, change the date by 1–3 days.");
+  return `<p>${bits.join("</p><p>")}</p><p class="meta">Always buy on the airline or the engine you opened. Ignore WhatsApp “agents”.</p>`;
+}
+$("#flyForm").addEventListener("submit", e => {
+  e.preventDefault();
+  runScout();
 });
 
 function renderSights() {
@@ -2168,6 +2324,7 @@ renderSeasons();
 pushBudgetInputs();
 renderBudget();
 renderFly();
+recommendNow();
 renderSights();
 renderPlay();
 loadRates();
