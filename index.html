@@ -207,15 +207,16 @@
       border-top: 1px solid var(--line);
       justify-content: space-around; align-items: flex-end;
       padding: 6px 4px calc(8px + env(safe-area-inset-bottom));
-      z-index: 50;
+      z-index: 80;
     }
     .mobile-nav button {
       border: 0; background: 0; font-size: .64rem; font-weight: 700;
-      min-width: 56px; min-height: 44px; color: var(--muted);
+      min-width: 56px; min-height: 48px; color: var(--muted);
       display: flex; flex-direction: column; align-items: center; gap: 2px;
+      pointer-events: auto;
     }
     .mobile-nav button.active { color: var(--green); }
-    .mobile-nav button span { font-size: 1.15rem; line-height: 1; }
+    .mobile-nav button span { font-size: 1.15rem; line-height: 1; pointer-events: none; }
     .install-sheet, #installHint { display: none !important; }
     .hidden { display: none !important; }
     .plan-form { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
@@ -690,11 +691,11 @@
   </main>
 
   <nav class="mobile-nav">
-    <button data-go="home"><span>🏠</span>Home</button>
-    <button data-go="explore"><span>🗺️</span>Map</button>
-    <button data-go="fly"><span>🤖</span>Scout</button>
-    <button data-go="play"><span>🧘</span>Play</button>
-    <button data-go="tools"><span>🧰</span>Tools</button>
+    <button type="button" data-go="home" onclick="go('home')"><span>🏠</span>Home</button>
+    <button type="button" data-go="explore" onclick="go('explore')"><span>🗺️</span>Map</button>
+    <button type="button" data-go="fly" onclick="go('fly')"><span>🤖</span>Scout</button>
+    <button type="button" data-go="play" onclick="go('play')"><span>🧘</span>Play</button>
+    <button type="button" data-go="tools" onclick="go('tools')"><span>🧰</span>Tools</button>
   </nav>
 
   <footer>
@@ -1687,15 +1688,21 @@ function go(id) {
   $$(".mobile-nav button").forEach(b => b.classList.toggle("active", b.dataset.go === id));
   window.scrollTo({top:0, behavior:"smooth"});
 }
-$$("[data-go]").forEach(b => b.addEventListener("click", e => {
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-go]");
+  if (!b) return;
   e.preventDefault();
   const t = b.dataset.go;
-  if (t === "explore") renderCards();
-  if (t === "visa") renderVisa();
-  if (t === "tools") renderBudget();
-  if (t === "home") recommendNow();
+  try {
+    if (t === "explore") renderCards();
+    if (t === "visa") renderVisa();
+    if (t === "tools") renderBudget();
+    if (t === "home") recommendNow();
+    if (t === "fly") renderFly();
+    if (t === "play") renderPlay();
+  } catch (err) { console.error(err); }
   go(t);
-}));
+});
 
 function setCur(code) {
   pullBudgetUSD();
@@ -2292,10 +2299,15 @@ if ($("#pq")) $("#pq").addEventListener("input", renderPlay);
 
 const _go = go;
 go = function(id) {
-  _go(id);
-  if (id === "fly") renderFly();
-  if (id === "sights") renderSights();
-  if (id === "play") renderPlay();
+  try { _go(id); } catch (err) { console.error(err); }
+  try {
+    if (id === "fly") renderFly();
+    if (id === "sights") renderSights();
+    if (id === "play") renderPlay();
+    if (id === "tools") renderBudget();
+    if (id === "home") recommendNow();
+    if (id === "explore") renderCards();
+  } catch (err) { console.error(err); }
 };
 
 renderRatesBar();
