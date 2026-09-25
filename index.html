@@ -370,6 +370,14 @@
         <button class="feature" data-go="fly"><div class="ico">🤖</div><b>Scout bot</b><span>Cheap flights, rooms, trains</span></button>
       </div>
       <div class="box" style="margin:18px 0 8px">
+        <h3>Near you</h3>
+        <p class="meta">Uses this phone’s location once. Food, sights and nature + Klook tickets for that city.</p>
+        <div class="actions" style="margin:8px 0">
+          <button class="btn p" type="button" id="nearBtn">Use my location</button>
+        </div>
+        <div id="nearOut"></div>
+      </div>
+      <div class="box" style="margin:18px 0 8px">
         <h3>Smart picks for you</h3>
         <p class="meta">Scored from your passport, diet and daily budget. Not ads.</p>
         <div id="homeRecs" class="scout-grid" style="margin-top:12px"></div>
@@ -1698,6 +1706,65 @@ function setCur(code) {
   pushBudgetInputs();
   try { renderRatesBar(); renderCards(); renderPlay(); renderBudget(); renderMove(); } catch (err) {}
 }
+const NEAR = [
+  {name:"Bangkok", id:"th", lat:13.7563, lon:100.5018, food:["Jay stalls & vegan cafés, Ari / Thonglor","Or Tor Kor fruit market","Chatuchak weekend eats"], nature:["Lumphini Park","Bang Krachao green lung","Ayutthaya day trip ruins + river"], see:["Grand Palace / Wat Pho","Chinwat night boats"]},
+  {name:"Chiang Mai", id:"th", lat:18.7883, lon:98.9853, food:["Sunday Walking Street jay stalls","Pun Pun / vegan cafés around Nimman"], nature:["Doi Suthep + Doi Inthanon","Mae Sa waterfalls"], see:["Old City temples"]},
+  {name:"Hanoi", id:"vn", lat:21.0278, lon:105.8342, food:["Phở chay + bún chay Old Quarter","Đồng Xuân market fruit"], nature:["Hoàn Kiếm lake loop","Ninh Binh / Tam Coc day trip"], see:["Temple of Literature"]},
+  {name:"Ho Chi Minh City", id:"vn", lat:10.8231, lon:106.6297, food:["District 1 chay canteens","Ben Thanh fruit"], nature:["Tao Dan park","Cu Chi + countryside"], see:["Independence Palace"]},
+  {name:"Siem Reap", id:"kh", lat:13.3633, lon:103.8564, food:["Pub Street vegan kitchens","Psar Chaa produce"], nature:["Tonlé Sap","Phnom Kulen"], see:["Angkor Wat sunrise"]},
+  {name:"Ubud", id:"id", lat:-8.5069, lon:115.2625, food:["Yoga Barn café / Clear Café","Gianyar night market"], nature:["Campuhan Ridge","Tegalalang rice","waterfalls north"], see:["Sacred Monkey Forest"]},
+  {name:"Kuala Lumpur", id:"my", lat:3.1390, lon:101.6869, food:["Jalan Alor + vegan cafés Bukit Bintang","Central Market"], nature:["KLCC Park","Batu Caves limestone"], see:["Petronas Towers walk"]},
+  {name:"Singapore", id:"sg", lat:1.3521, lon:103.8198, food:["Hawker centres: Tekka, Chinatown Complex"], nature:["Gardens by the Bay","MacRitchie Reservoir"], see:["Chinatown + Sri Mariamman"]},
+  {name:"Tokyo", id:"jp", lat:35.6762, lon:139.6503, food:["Vegan ramen (Afuri / T’s)","depachika basements"], nature:["Shinjuku Gyoen","day trip Kamakura / Nikko"], see:["Senso-ji, Shibuya"]},
+  {name:"Taipei", id:"tw", lat:25.0330, lon:121.5654, food:["Night markets + certified vegan shops"], nature:["Yangmingshan","Maokong gondola"], see:["Chiang Kai-shek Memorial"]},
+  {name:"Seoul", id:"kr", lat:37.5665, lon:126.9780, food:["Hongdae / Itaewon vegan"], nature:["Bukhansan","Hangang parks"], see:["Gyeongbokgung"]},
+  {name:"Delhi", id:"in", lat:28.6139, lon:77.2090, food:["Sattvic / Jain thalis, Connaught Place"], nature:["Lodhi Garden","day trip Agra"], see:["Old Delhi spice market"]},
+  {name:"Kathmandu", id:"np", lat:27.7172, lon:85.3240, food:["Thamel vegan bakeries"], nature:["Swayambhu hill","day hike Shivapuri"], see:["Boudhanath, Durbar squares"]},
+  {name:"Colombo", id:"lk", lat:6.9271, lon:79.8612, food:["Galle Face vegan cafés","Pettah market fruit"], nature:["Gangaramaya lake","day trip Galle"], see:["Fort + Pettah"]},
+  {name:"Tbilisi", id:"ge", lat:41.7151, lon:44.8271, food:["Vegan khinkali spots, Vera / Sololaki"], nature:["Botanical Garden","day trip Kazbegi"], see:["Old Town sulphur baths"]},
+  {name:"Mahón", id:"es", lat:39.8890, lon:4.2644, food:["Mercat des Claustre produce","harbour vegan-friendly kitchens"], nature:["Cala Pregonda / Mitjana","Albufera des Grau"], see:["Cales Fonts, Ciutadella old town"]},
+  {name:"London", id:"gb", lat:51.5074, lon:-0.1278, food:["Borough Market, Brick Lane vegan"], nature:["Hampstead Heath","Richmond Park"], see:["South Bank"]}
+];
+function haversine(a,b,c,d) {
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(c-a), dLon=toR(d-b);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a))*Math.cos(toR(c))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function nearestCity(lat, lon) {
+  return NEAR.map(n => ({...n, km: haversine(lat,lon,n.lat,n.lon)})).sort((a,b)=>a.km-b.km)[0];
+}
+function renderNear(n, raw) {
+  const box = $("#nearOut");
+  if (!box) return;
+  const cow = `https://www.happycow.net/searchmap?s=${encodeURIComponent(n.name)}`;
+  box.innerHTML = `
+    <p><b>${n.name}</b> ${raw?`· about ${Math.round(n.km)} km from you`:""} <span class="proof live">Klook + HappyCow</span></p>
+    <div class="scout-grid" style="margin-top:10px">
+      <div class="rec-card"><h3>Food</h3><ul class="clean">${n.food.map(x=>`<li>${x}</li>`).join("")}</ul>
+        <div class="actions"><a class="btn p" href="${cow}" target="_blank" rel="noopener">HappyCow</a>
+        <a class="btn s" href="${klookSearch(n.name,"food tour")}" target="_blank" rel="noopener">Klook food</a></div></div>
+      <div class="rec-card"><h3>Attractions</h3><ul class="clean">${n.see.map(x=>`<li>${x}</li>`).join("")}</ul>
+        <div class="actions"><a class="btn p" href="${klookSearch(n.name,"things to do")}" target="_blank" rel="noopener">Klook tickets</a>
+        <a class="btn s" href="https://maps.apple.com/?q=${mapQuery(n.see[0]+", "+n.name)}" target="_blank" rel="noopener">Apple Maps</a></div></div>
+      <div class="rec-card"><h3>Nature</h3><ul class="clean">${n.nature.map(x=>`<li>${x}</li>`).join("")}</ul>
+        <div class="actions"><a class="btn p" href="${klookSearch(n.name,"nature")}" target="_blank" rel="noopener">Klook nature</a>
+        <a class="btn s" href="${klookSearch(n.name,"day trip")}" target="_blank" rel="noopener">Klook day trips</a></div></div>
+    </div>
+    <p class="meta" style="margin-top:8px">Klook is the live activity shop. Prices there are the proof, not our list.</p>`;
+}
+function locateMe() {
+  const box = $("#nearOut");
+  if (!navigator.geolocation) { if (box) box.innerHTML = `<p class="meta">This phone has no location API. Pick a country on the map instead.</p>`; return; }
+  if (box) box.innerHTML = `<p class="meta">Finding you…</p>`;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const n = nearestCity(pos.coords.latitude, pos.coords.longitude);
+    state.near = n.name; save();
+    renderNear(n, true);
+  }, () => {
+    if (box) box.innerHTML = `<p class="meta">Location blocked. Allow location for this site in Safari Settings, or open a country dossier.</p>`;
+  }, { enableHighAccuracy:false, timeout:12000, maximumAge:600000 });
+}
 function recommendNow() {
   const box = $("#homeRecs");
   if (!box) return;
@@ -1749,6 +1816,8 @@ const pf = $("#passportForm");
 if (pf) pf.addEventListener("submit", unlockMap);
 const ub = $("#unlockBtn");
 if (ub) ub.addEventListener("click", unlockMap);
+const nb = $("#nearBtn");
+if (nb) nb.onclick = locateMe;
 
 let filter = "all";
 $$("#explore .chip").forEach(c => c.addEventListener("click", () => {
@@ -1805,6 +1874,10 @@ function renderCards() {
 function mapQuery(place) {
   return encodeURIComponent(place);
 }
+function klookSearch(place, kind) {
+  const q = encodeURIComponent((place||"") + (kind ? " " + kind : ""));
+  return `https://www.klook.com/en-GB/search/result/?query=${q}`;
+}
 function mapBtns(place) {
   const q = mapQuery(place);
   const apple = `https://maps.apple.com/?q=${q}`;
@@ -1815,9 +1888,10 @@ function mapBtns(place) {
     <a class="btn p" href="${apple}" target="_blank" rel="noopener">Apple Maps</a>
     <a class="btn s" href="${google}" target="_blank" rel="noopener">Google Maps</a>
     <a class="btn s" href="${guru}" target="_blank" rel="noopener">Guru Maps Pro</a>
+    <a class="btn s" href="${klookSearch(place)}" target="_blank" rel="noopener">Klook</a>
     <a class="btn s" href="${guruWeb}" target="_blank" rel="noopener">Get Guru Maps</a>
   </div>
-  <p class="meta">Guru Maps opens the installed Pro app on iPhone. If it does nothing, install it first then tap again.</p>`;
+  <p class="meta">Klook opens activities and tickets. Guru Maps opens the installed Pro app.</p>`;
 }
 function cityMapLine(c) {
   return (c.cities || []).map(city => {
@@ -2098,6 +2172,7 @@ function runScout() {
           <a class="btn s" href="${u.kiwi}" target="_blank" rel="noopener">Kiwi</a>
           <a class="btn s" href="https://www.airasia.com" target="_blank" rel="noopener">AirAsia</a>
           <a class="btn s" href="https://www.vietjetair.com" target="_blank" rel="noopener">VietJet</a>
+          <a class="btn s" href="${klookSearch(toCity, "airport transfer")}" target="_blank" rel="noopener">Klook transfer</a>
         </div>
       </div>
       <div class="box">
@@ -2122,6 +2197,11 @@ function runScout() {
       <div class="box">
         <h3>Bot recommendation</h3>
         ${scoutAdvice(from, to, band)}
+        <div class="actions" style="margin-top:8px">
+          <a class="btn p" href="${klookSearch(toCity)}" target="_blank" rel="noopener">Klook ${toCity}</a>
+          <a class="btn s" href="${klookSearch(toCity, "food")}" target="_blank" rel="noopener">Klook food</a>
+          <a class="btn s" href="${klookSearch(toCity, "nature")}" target="_blank" rel="noopener">Klook nature</a>
+        </div>
       </div>
     </div>`;
 }
