@@ -285,6 +285,7 @@
         <button data-go="fly">Scout</button>
         <button data-go="move">Move</button>
         <button data-go="play">Play</button>
+        <button data-go="sights">Sights</button>
         <button data-go="plan">Plan</button>
         <button data-go="tools">Tools</button>
         <button data-go="visa">Visa</button>
@@ -454,6 +455,7 @@
         <button class="chip" data-play="music">Live music</button>
         <button class="chip" data-play="shop">Shops</button>
         <button class="chip" data-play="stay">Stays</button>
+        <button class="chip" data-play="nature">Nature</button>
       </div>
       <input class="search" id="pq" placeholder="Ubud Yoga Barn, Rishikesh, Kopan…" style="margin-bottom:14px" />
       <div id="playList"></div>
@@ -617,7 +619,21 @@
           <div><label class="s" id="labVisa" style="color:var(--muted)">Visas + shots</label><input type="number" id="bVisa" min="0" max="20000000" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Calculate</button></div>
         </form>
-        <div id="budOut" class="tool-out"></div>
+        <div id="budOut" class="tool-out" style="min-height:140px;margin-top:14px;padding:16px;border-radius:18px;background:linear-gradient(160deg,#0c3b2e,#0e8f9a);color:#fff">
+          <p class="meta" style="color:#d7fff0">Results appear here as soon as you change a number.</p>
+        </div>
+      </div>
+
+      <div class="box" style="margin:16px 0">
+        <h3>Price window</h3>
+        <p class="meta">Type any amount in one currency. Every other currency updates live.</p>
+        <div class="plan-form" style="margin:10px 0">
+          <div><label class="s" style="color:var(--muted)">Amount</label><input type="number" id="fxAmt" value="40" min="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">This is</label>
+            <select id="fxFrom" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
+          </div>
+        </div>
+        <div id="fxBoard" class="grid" style="margin-top:12px"></div>
       </div>
 
       <div class="detail">
@@ -1197,7 +1213,8 @@ const RIDE = {
 
 const PLAY = {
   th: {
-    beach:["Railay / Tonsai, Krabi","Koh Lanta long beaches","Koh Samui Chaweng / Lamai","Koh Phangan west coast","Mai Khao, Phuket (quieter)"],
+    beach:["Railay / Tonsai, Krabi","Phra Nang cave beach","Koh Lanta (Klong Dao, Long Beach, Kantiang)","Koh Muk Emerald Cave","Koh Ngai","Koh Kradan","Koh Lipe Sunrise / Pattaya Beach","Koh Samui Chaweng / Lamai / Maenam","Koh Phangan Than Sadet / Bottle Beach / west coast","Koh Tao Sairee","Mai Khao + Nai Yang, Phuket","Kata / Karon","Freedom Beach","Ao Nang + Railay walk","Hua Hin / Cha-Am","Koh Chang White Sand","Koh Mak","Koh Samet","Similan islands (seasonal)"],
+    nature:["Doi Inthanon summit + Kew Mae Pan","Doi Suthep forest","Khao Sok lake + jungle","Erawan Falls","Kuang… wait Thailand: Umphang","Khao Yai NP","Phi Phi viewpoint","Hong Islands kayak"],
     spa:["Wat Pho traditional massage school, Bangkok","Chiang Mai herbal compress spas $12–25","Oasis / Let's Relax chains","Koh Lanta beachfront massage"],
     dive:["Similan / Surin (Nov–Apr)","Koh Tao beginner wrecks & reefs","Hin Daeng / Hin Muang from Lanta"],
     music:["BAM BAM / Smalls, Bangkok","North Gate Jazz Co-op, Chiang Mai","Full Moon / other island parties — loud, not jazz"],
@@ -1208,7 +1225,8 @@ const PLAY = {
     sound:["Koh Phangan gong & crystal-bowl nights $15–30","Chiang Mai sound-healing rooms in Nimman / Old City","Pai riverside bowls in high season"]
   },
   vn: {
-    beach:["An Bang, Hoi An","My Khe, Da Nang","Phu Quoc Sao Beach","Nha Trang (busy)","Con Dao if you fly"],
+    beach:["An Bang + Bai Dai, Hoi An","My Khe / Non Nuoc, Da Nang","Lang Co lagoon","Nha Trang Doc Let","Quy Nhon Bai Xep","Phu Quoc Sao / Ong Lang / Bai Truong","Con Dao Lo Voi","Phan Thiet Mui Ne dunes beach","Ha Long islet beaches (boat)"],
+    nature:["Ninh Binh / Tam Coc / Trang An","Phong Nha–Ke Bang caves","Ha Giang loop karst","Sapa terraces","Ba Be lake","Cat Tien NP","Mekong Delta orchards"],
     spa:["Hoi An herbal / foot spas $8–18","HCMC district 1 hotel spas"],
     dive:["Nha Trang islands","Phu Quoc reefs","Con Dao for clearer water"],
     music:["Hanoi jazz bars (Binh Minh, Swing)","Acoustic cafés in Hoi An","HCMC rooftop live sets"],
@@ -1241,7 +1259,8 @@ const PLAY = {
     sound:["LPB wellness houses — gong nights in season"]
   },
   id: {
-    beach:["Balangan / Bingin, Bali","Kuta Lombok","Gili T / Air","Pink Beach, Komodo","Nusa Penida Crystal Bay"],
+    beach:["Balangan / Bingin / Padang Padang, Bali","Nusa Dua / Sanur quieter","Nusa Penida Crystal Bay + Kelingking view","Nusa Lembongan Dream Beach","Gili T / Air / Meno","Kuta / Selong, Lombok","Pink Beach Komodo","Nihiwatu Sumba (splurge)","Raja Ampat sands if you fly far"],
+    nature:["Tegalalang + Campuhan ridge","Mount Batur sunrise","Sekumpul / Tegenungan falls","Komodo / Padar hike","Mount Rinjani (fit)","Borobudur dawn from hill"],
     spa:["Ubud spa belt $15–40","Yoga + massage packages"],
     dive:["Tulamben USS Liberty wreck","Menjangan","Komodo / Padar liveaboards","Gili Air muck + turtles"],
     music:["Ubud jazz / warung stages","Canggu beach clubs (loud)","Yogya campus bars"],
@@ -1549,10 +1568,18 @@ const FX = {
   date: "fallback", source: "offline estimate", live: false, fetchedAt: 0
 };
 const CUR = [
-  ["GBP","£","Pound"],["EUR","€","Euro"],["USD","$","US dollar"],
-  ["THB","฿","Baht"],["VND","₫","Dong"],["IDR","Rp","Rupiah"],
-  ["MYR","RM","Ringgit"],["PHP","₱","Peso"],["SGD","S$","Singapore $"],
-  ["INR","₹","Rupee"],["JPY","¥","Yen"],["KRW","₩","Won"]
+  ["GBP","£","Pound","United Kingdom"],
+  ["EUR","€","Euro","Euro area / Slovakia"],
+  ["USD","$","US dollar","United States"],
+  ["THB","฿","Baht","Thailand"],
+  ["VND","₫","Dong","Vietnam"],
+  ["IDR","Rp","Rupiah","Indonesia"],
+  ["MYR","RM","Ringgit","Malaysia"],
+  ["PHP","₱","Peso","Philippines"],
+  ["SGD","S$","Singapore $","Singapore"],
+  ["INR","₹","Rupee","India"],
+  ["JPY","¥","Yen","Japan"],
+  ["KRW","₩","Won","South Korea"]
 ];
 function rate(code) { return FX[code] || 1; }
 function gbp(n) { return n * rate("GBP"); }
@@ -2277,7 +2304,7 @@ function playBlock(id) {
   const p = PLAY[id];
   if (!p) return "";
   const row = (t, arr) => arr && arr.length ? `<h3 style="margin-top:14px">${t}</h3><ul class="clean">${arr.map(x=>`<li>${x}</li>`).join("")}</ul>` : "";
-  return row("Beaches", p.beach)+row("Yoga", p.yoga)+row("Meditation", p.sit)+row("Sound baths", p.sound)+row("Spas", p.spa)+row("Scuba", p.dive)+row("Live music", p.music)+row("Shops", p.shop)+row("Stay types", p.stay);
+  return row("Beaches", p.beach)+row("Nature", p.nature)+row("Yoga", p.yoga)+row("Meditation", p.sit)+row("Sound baths", p.sound)+row("Spas", p.spa)+row("Scuba", p.dive)+row("Live music", p.music)+row("Shops", p.shop)+row("Stay types", p.stay);
 }
 function renderPlay() {
   const q = (($("#pq") && $("#pq").value) || "").toLowerCase();
@@ -2298,7 +2325,7 @@ function renderPlay() {
         <button class="btn p" data-open="${c.id}">Dossier</button></div>`;
     }).join("");
   } else {
-    const label = {beach:"Beaches",spa:"Spas",dive:"Scuba sites",music:"Live music",shop:"Shops",yoga:"Yoga",sit:"Meditation",sound:"Sound baths"}[playFilter];
+    const label = {beach:"Beaches",spa:"Spas",dive:"Scuba sites",music:"Live music",shop:"Shops",yoga:"Yoga",sit:"Meditation",sound:"Sound baths",nature:"Nature"}[playFilter];
     box.innerHTML = C.map(c => {
       const p = PLAY[c.id]; if (!p) return "";
       const items = p[playFilter] || [];
@@ -2390,6 +2417,39 @@ function pushBudgetInputs() {
   if ($("#labFly")) $("#labFly").textContent = "Flights return · " + lab;
   if ($("#labVisa")) $("#labVisa").textContent = "Visas + shots · " + lab;
 }
+function fxRow(usd) {
+  return CUR.map(([c,s,name,land]) => {
+    const n = toCur(usd, c);
+    const shown = (c==="VND"||c==="IDR"||c==="KRW"||c==="JPY") ? Math.round(n).toLocaleString() : (n>=100?Math.round(n).toLocaleString():Number(n).toFixed(2));
+    return `<div class="stat" style="background:rgba(255,255,255,.1);border:0;color:#fff"><span>${s} ${c} · ${land}</span><b>${s}${shown}</b></div>`;
+  }).join("");
+}
+function renderFxBoard() {
+  const board = $("#fxBoard");
+  const fromSel = $("#fxFrom");
+  if (fromSel && !fromSel.dataset.ready) {
+    CUR.forEach(([c,s,n,land]) => fromSel.append(new Option(`${s} ${c} — ${land}`, c)));
+    fromSel.value = curCode();
+    fromSel.dataset.ready = "1";
+    fromSel.onchange = renderFxBoard;
+    const amt = $("#fxAmt");
+    if (amt) amt.addEventListener("input", renderFxBoard);
+  }
+  if (!board) return;
+  const from = (fromSel && fromSel.value) || curCode();
+  const raw = +(($("#fxAmt") && $("#fxAmt").value) || 0);
+  const usd = raw / (rate(from) || 1);
+  board.innerHTML = CUR.map(([c,s,name,land]) => {
+    const n = toCur(usd, c);
+    const shown = (c==="VND"||c==="IDR"||c==="KRW"||c==="JPY") ? Math.round(n).toLocaleString() : (n>=100?Math.round(n).toLocaleString():Number(n).toFixed(2));
+    const on = c === from;
+    return `<article class="card" style="${on?"outline:2px solid var(--gold)":""}"><div class="body">
+      <div class="kicker">${land}</div>
+      <h3>${s} ${shown}</h3>
+      <p class="meta">${name} (${c})</p>
+    </div></article>`;
+  }).join("");
+}
 function renderBudget() {
   const out = $("#budOut");
   if (!out || !$("#bDays")) return;
@@ -2401,13 +2461,17 @@ function renderBudget() {
   const ground = days * daily;
   const total = ground + fly + visa;
   const pad = total * 0.12;
+  const grand = total + pad;
   const code = curCode();
-  out.innerHTML = `<div class="split3">
-    <div class="stat"><span>On the ground</span><b class="big-stat">${money(ground)}</b></div>
-    <div class="stat"><span>Flights + visas</span><b>${money(fly+visa)}</b></div>
-    <div class="stat"><span>Trip + 12% buffer</span><b class="big-stat">${money(total+pad)}</b></div>
-  </div>
-  <p class="meta" style="margin-top:10px">${days} days × ${fmt(daily)} / day. Whole lab is in <b>${code}</b>. 1 USD = ${fmt(1,"GBP")} · ${fmt(1,"EUR")}.</p>`;
+  out.innerHTML = `<p style="opacity:.85;margin-bottom:8px">Trip budget results · ${days} days · display ${code}</p>
+    <div class="split3">
+      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>On the ground</span><b class="big-stat">${fmt(ground)}</b></div>
+      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>Flights + visas</span><b class="big-stat">${fmt(fly+visa)}</b></div>
+      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>Total + 12% buffer</span><b class="big-stat">${fmt(grand)}</b></div>
+    </div>
+    <p style="margin:12px 0 8px;opacity:.9">${days} × ${fmt(daily)} / day</p>
+    <div class="grid">${fxRow(grand)}</div>`;
+  renderFxBoard();
 }
 const budForm = $("#budForm");
 if (budForm) {
@@ -2437,6 +2501,7 @@ renderPack();
 renderSeasons();
 pushBudgetInputs();
 renderBudget();
+renderFxBoard();
 renderFly();
 recommendNow();
 renderSights();
