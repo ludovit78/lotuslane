@@ -1,5 +1,5 @@
-const CACHE = "lotuslane-v3";
-const PRECACHE = ["./","index.html","manifest.json","icon.svg"];
+const CACHE = "lotuslane-v4";
+const PRECACHE = ["./"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
 });
@@ -8,11 +8,5 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy));
-      return res;
-    }).catch(() => caches.match("./index.html")))
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match("./")));
 });
