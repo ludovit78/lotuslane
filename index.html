@@ -507,8 +507,14 @@
       </div>
       <div id="planOut"></div>
 
-      <div class="box" style="margin:18px 0">
+        <div class="box" style="margin:18px 0">
         <h3>My trip diary</h3>
+        <p class="meta">Set a whole-trip budget. Every stay, flight, bike, bus, meal and ticket comes off it.</p>
+        <div class="plan-form" style="margin:10px 0">
+          <div><label class="s" style="color:var(--muted)">Trip budget (current currency)</label><input type="number" id="tripBudget" min="0" step="1" value="2000" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div style="display:flex;align-items:end"><button class="btn s" type="button" id="saveBudget">Save budget</button></div>
+        </div>
+        <div id="remainBox" class="okbox" style="margin:8px 0 12px"></div>
         <p class="meta">Stays, flights, motorcycle hire, bus / train / taxi, food and attractions. Add or remove any line. Saved on this phone.</p>
         <form class="plan-form" id="diaryForm" style="margin-top:12px">
           <div><label class="s" style="color:var(--muted)">Date</label><input type="date" id="dDate" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
@@ -547,6 +553,7 @@
         </div>
         <div id="diaryList"></div>
         <div id="diarySum" class="okbox" style="margin-top:12px"></div>
+        <div id="stayNear" style="margin-top:12px"></div>
       </div>
     </section>
 
@@ -2576,8 +2583,43 @@ function renderDiary() {
   const usd = items.reduce((s,it) => s + (+it.usd||0), 0);
   const by = {};
   items.forEach(it => { by[it.cat] = (by[it.cat]||0) + (+it.usd||0); });
-  sum.innerHTML = `<b>Trip spend ${fmt(usd)}</b><p class="meta">${Object.keys(CATL).map(k => `${CATL[k]} ${fmt(by[k]||0)}`).join(" · ")}</p>`;
+  const budUsd = state.tripBudgetUsd || 0;
+  const left = budUsd - usd;
+  sum.innerHTML = `<b>Spent ${fmt(usd)}</b><p class="meta">${Object.keys(CATL).map(k => `${CATL[k]} ${fmt(by[k]||0)}`).join(" · ")}</p>`;
+  const rb = $("#remainBox");
+  if (rb) {
+    rb.style.background = left < 0 ? "#fdecec" : "#e9f7ef";
+    rb.innerHTML = budUsd
+      ? `<b>Trip budget ${fmt(budUsd)}</b><p>Spent ${fmt(usd)} · <b>Remaining ${fmt(left)}</b></p><p class="meta">Stays ${fmt(by.stay||0)} · Flights ${fmt(by.flight||0)} · Bikes ${fmt(by.moto||0)} · Travel ${fmt(by.travel||0)} · Food ${fmt(by.food||0)} · Attractions ${fmt(by.see||0)}</p>`
+      : `<p>Set a trip budget above to see what is left after stays, travel and food.</p>`;
+  }
+  if ($("#tripBudget") && document.activeElement !== $("#tripBudget") && budUsd) $("#tripBudget").value = Math.round(toCur(budUsd));
 }
+function matchNear(place) {
+  const q = (place || "").toLowerCase();
+  return NEAR.find(n => q.includes(n.name.toLowerCase()) || n.name.toLowerCase().split(" ")[0].length > 3 && q.includes(n.name.toLowerCase().split(" ")[0].toLowerCase()));
+}
+function showStayNear(place) {
+  const box = $("#stayNear");
+  if (!box) return;
+  const n = matchNear(place);
+  if (!n) { box.innerHTML = `<p class="meta">No city match for “${place}”. Try Bangkok, Chiang Mai, Ubud, Hanoi…</p>`; return; }
+  const cow = `https://www.happycow.net/searchmap?s=${encodeURIComponent(n.name)}`;
+  box.innerHTML = `<h3>Near ${n.name}</h3>
+    <div class="scout-grid">
+      <div class="rec-card"><h3>Eat</h3><ul class="clean">${n.food.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn p" href="${cow}" target="_blank" rel="noopener">HappyCow</a></div>
+      <div class="rec-card"><h3>Shop</h3><p class="meta">Markets and gear near ${n.name}.</p><a class="btn s" href="${klookSearch(n.name,"market")}" target="_blank" rel="noopener">Klook markets</a> <a class="btn s" href="https://maps.apple.com/?q=${mapQuery("market "+n.name)}" target="_blank" rel="noopener">Maps</a></div>
+      <div class="rec-card"><h3>Bike rental</h3><p class="meta">Scooter shops around ${n.name}. Check licence and insurance.</p><a class="btn s" href="https://maps.apple.com/?q=${mapQuery("motorbike rental "+n.name)}" target="_blank" rel="noopener">Apple Maps</a> <a class="btn s" href="${klookSearch(n.name,"scooter")}" target="_blank" rel="noopener">Klook scooter</a></div>
+      <div class="rec-card"><h3>Nature</h3><ul class="clean">${n.nature.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn s" href="${klookSearch(n.name,"nature")}" target="_blank" rel="noopener">Klook nature</a></div>
+      <div class="rec-card"><h3>Attractions</h3><ul class="clean">${n.see.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn s" href="${klookSearch(n.name,"things to do")}" target="_blank" rel="noopener">Klook tickets</a></div>
+    </div>`;
+}
+const saveBud = $("#saveBudget");
+if (saveBud) saveBud.onclick = () => {
+  const raw = +$("#tripBudget").value || 0;
+  state.tripBudgetUsd = raw / (rate(curCode()) || 1);
+  save(); renderDiary();
+};
 const diaryForm = $("#diaryForm");
 if (diaryForm) diaryForm.addEventListener("submit", e => {
   e.preventDefault();
@@ -2596,6 +2638,7 @@ if (diaryForm) diaryForm.addEventListener("submit", e => {
   save();
   $("#dPlace").value = ""; $("#dNote").value = "";
   renderDiary();
+  if ($("#dCat").value === "stay") showStayNear(place);
 });
 $$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
   diaryFilter = b.dataset.dcat;
