@@ -509,27 +509,39 @@
 
       <div class="box" style="margin:18px 0">
         <h3>My trip diary</h3>
-        <p class="meta">Stays, travel, food and attractions. Saved on this phone. Costs convert with the live rate bar.</p>
+        <p class="meta">Stays, flights, motorcycle hire, bus / train / taxi, food and attractions. Add or remove any line. Saved on this phone.</p>
         <form class="plan-form" id="diaryForm" style="margin-top:12px">
           <div><label class="s" style="color:var(--muted)">Date</label><input type="date" id="dDate" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div><label class="s" style="color:var(--muted)">Category</label>
             <select id="dCat" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
               <option value="stay">Accommodation</option>
+              <option value="flight">Flight</option>
+              <option value="moto">Motorcycle rental</option>
               <option value="travel">Travel</option>
               <option value="food">Food</option>
               <option value="see">Attraction</option>
             </select>
           </div>
-          <div><label class="s" style="color:var(--muted)">Place</label><input type="text" id="dPlace" placeholder="Ubud guesthouse, 12Go bus…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div id="dModeWrap"><label class="s" style="color:var(--muted)">Travel type</label>
+            <select id="dMode" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
+              <option value="bus">Bus</option>
+              <option value="train">Train</option>
+              <option value="taxi">Taxi</option>
+              <option value="ferry">Ferry</option>
+            </select>
+          </div>
+          <div><label class="s" style="color:var(--muted)">Place</label><input type="text" id="dPlace" placeholder="Ubud room, VietJet, scooter shop…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div><label class="s" style="color:var(--muted)">Cost in current currency</label><input type="number" id="dCost" min="0" step="0.01" value="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Room 4, vegan breakfast included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add to calendar</button></div>
+          <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Seat, plate, helmet included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add</button></div>
         </form>
         <div id="diaryCal" style="margin-top:16px"></div>
         <div class="toolbar" id="diaryChips" style="margin-top:12px">
           <button class="chip on" type="button" data-dcat="all">All</button>
           <button class="chip" type="button" data-dcat="stay">Stays</button>
-          <button class="chip" type="button" data-dcat="travel">Travel</button>
+          <button class="chip" type="button" data-dcat="flight">Flights</button>
+          <button class="chip" type="button" data-dcat="moto">Motorbikes</button>
+          <button class="chip" type="button" data-dcat="travel">Bus / train / taxi</button>
           <button class="chip" type="button" data-dcat="food">Food</button>
           <button class="chip" type="button" data-dcat="see">Attractions</button>
         </div>
@@ -2514,8 +2526,9 @@ if (budForm) {
   });
 }
 
-const CATL = {stay:"Accommodation", travel:"Travel", food:"Food", see:"Attraction"};
-const CATC = {stay:"#0e8f9a", travel:"#3b5bdb", food:"#e09a2b", see:"#e25d72"};
+const CATL = {stay:"Accommodation", flight:"Flight", moto:"Motorcycle rental", travel:"Travel", food:"Food", see:"Attraction"};
+const CATC = {stay:"#0e8f9a", flight:"#1a6b52", moto:"#7c4a03", travel:"#3b5bdb", food:"#e09a2b", see:"#e25d72"};
+const MODEL = {bus:"Bus", train:"Train", taxi:"Taxi", ferry:"Ferry"};
 let diaryFilter = "all";
 let diaryMonth = new Date();
 function diaryItems() {
@@ -2551,7 +2564,7 @@ function renderDiary() {
   $$("#diaryCal [data-day]").forEach(b => b.onclick = () => { $("#dDate").value = b.dataset.day; });
   const shown = items.filter(it => diaryFilter === "all" || it.cat === diaryFilter).sort((a,b) => a.date.localeCompare(b.date));
   list.innerHTML = shown.map(it => `<div class="box" style="margin:8px 0;border-left:4px solid ${CATC[it.cat]}">
-    <b>${it.date} · ${CATL[it.cat]}</b>
+    <b>${it.date} · ${CATL[it.cat] || it.cat}${it.mode ? " · " + (MODEL[it.mode] || it.mode) : ""}</b>
     <p>${it.place} ${it.note?`<span class="meta">— ${it.note}</span>`:""}</p>
     <p>${fmt(it.usd)}</p>
     <button type="button" class="btn s" data-del="${it.id}">Remove</button>
@@ -2577,6 +2590,7 @@ if (diaryForm) diaryForm.addEventListener("submit", e => {
     id: Date.now().toString(36),
     date: $("#dDate").value || new Date().toISOString().slice(0,10),
     cat: $("#dCat").value,
+    mode: $("#dCat").value === "travel" ? $("#dMode").value : "",
     place, note: $("#dNote").value || "", usd
   });
   save();
@@ -2589,6 +2603,11 @@ $$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
   b.classList.add("on");
   renderDiary();
 });
+function syncMode() {
+  const wrap = $("#dModeWrap");
+  if (wrap) wrap.style.display = ($("#dCat") && $("#dCat").value === "travel") ? "" : "none";
+}
+if ($("#dCat")) { $("#dCat").addEventListener("change", syncMode); syncMode(); }
 
 (function themeInit(){
   const saved = localStorage.getItem("lotuslane_theme") || "day";
