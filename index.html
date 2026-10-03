@@ -506,6 +506,36 @@
         </form>
       </div>
       <div id="planOut"></div>
+
+      <div class="box" style="margin:18px 0">
+        <h3>My trip diary</h3>
+        <p class="meta">Stays, travel, food and attractions. Saved on this phone. Costs convert with the live rate bar.</p>
+        <form class="plan-form" id="diaryForm" style="margin-top:12px">
+          <div><label class="s" style="color:var(--muted)">Date</label><input type="date" id="dDate" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Category</label>
+            <select id="dCat" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
+              <option value="stay">Accommodation</option>
+              <option value="travel">Travel</option>
+              <option value="food">Food</option>
+              <option value="see">Attraction</option>
+            </select>
+          </div>
+          <div><label class="s" style="color:var(--muted)">Place</label><input type="text" id="dPlace" placeholder="Ubud guesthouse, 12Go bus…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Cost in current currency</label><input type="number" id="dCost" min="0" step="0.01" value="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Room 4, vegan breakfast included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add to calendar</button></div>
+        </form>
+        <div id="diaryCal" style="margin-top:16px"></div>
+        <div class="toolbar" id="diaryChips" style="margin-top:12px">
+          <button class="chip on" type="button" data-dcat="all">All</button>
+          <button class="chip" type="button" data-dcat="stay">Stays</button>
+          <button class="chip" type="button" data-dcat="travel">Travel</button>
+          <button class="chip" type="button" data-dcat="food">Food</button>
+          <button class="chip" type="button" data-dcat="see">Attractions</button>
+        </div>
+        <div id="diaryList"></div>
+        <div id="diarySum" class="okbox" style="margin-top:12px"></div>
+      </div>
     </section>
 
     <section id="visa" class="panel">
@@ -724,6 +754,7 @@
     <button type="button" data-go="explore" onclick="go('explore')"><span>🗺️</span>Map</button>
     <button type="button" data-go="fly" onclick="go('fly')"><span>🤖</span>Scout</button>
     <button type="button" data-go="play" onclick="go('play')"><span>🧘</span>Play</button>
+    <button type="button" data-go="plan" onclick="go('plan')"><span>📅</span>Plan</button>
     <button type="button" data-go="tools" onclick="go('tools')"><span>🧰</span>Tools</button>
   </nav>
 
@@ -2356,6 +2387,7 @@ go = function(id) {
     if (id === "tools") renderBudget();
     if (id === "home") recommendNow();
     if (id === "explore") renderCards();
+    if (id === "plan") { try { renderDiary(); } catch (e) {} }
   } catch (err) { console.error(err); }
 };
 
@@ -2481,6 +2513,82 @@ if (budForm) {
     if (el) el.addEventListener("input", renderBudget);
   });
 }
+
+const CATL = {stay:"Accommodation", travel:"Travel", food:"Food", see:"Attraction"};
+const CATC = {stay:"#0e8f9a", travel:"#3b5bdb", food:"#e09a2b", see:"#e25d72"};
+let diaryFilter = "all";
+let diaryMonth = new Date();
+function diaryItems() {
+  state.diary = state.diary || [];
+  return state.diary;
+}
+function renderDiary() {
+  const cal = $("#diaryCal"), list = $("#diaryList"), sum = $("#diarySum");
+  if (!cal) return;
+  if ($("#dDate") && !$("#dDate").value) $("#dDate").value = new Date().toISOString().slice(0,10);
+  const items = diaryItems();
+  const y = diaryMonth.getFullYear(), m = diaryMonth.getMonth();
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m+1, 0).getDate();
+  const byDay = {};
+  items.forEach(it => { (byDay[it.date] = byDay[it.date] || []).push(it); });
+  const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  let cells = names.map(n => `<div class="mo" style="background:transparent">${n}</div>`).join("");
+  for (let i = 0; i < first; i++) cells += `<div></div>`;
+  for (let d = 1; d <= days; d++) {
+    const iso = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const marks = byDay[iso] || [];
+    const dots = marks.map(it => `<i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CATC[it.cat]};margin:0 1px"></i>`).join("");
+    cells += `<button type="button" class="mo" data-day="${iso}" style="background:${marks.length?"#fff":"#f6efe4"};border:1px solid var(--line);min-height:42px">${d}<div>${dots}</div></button>`;
+  }
+  cal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <button type="button" class="btn s" id="calPrev">←</button>
+    <b>${diaryMonth.toLocaleString("en",{month:"long", year:"numeric"})}</b>
+    <button type="button" class="btn s" id="calNext">→</button>
+  </div><div class="season">${cells}</div>`;
+  $("#calPrev").onclick = () => { diaryMonth = new Date(y, m-1, 1); renderDiary(); };
+  $("#calNext").onclick = () => { diaryMonth = new Date(y, m+1, 1); renderDiary(); };
+  $$("#diaryCal [data-day]").forEach(b => b.onclick = () => { $("#dDate").value = b.dataset.day; });
+  const shown = items.filter(it => diaryFilter === "all" || it.cat === diaryFilter).sort((a,b) => a.date.localeCompare(b.date));
+  list.innerHTML = shown.map(it => `<div class="box" style="margin:8px 0;border-left:4px solid ${CATC[it.cat]}">
+    <b>${it.date} · ${CATL[it.cat]}</b>
+    <p>${it.place} ${it.note?`<span class="meta">— ${it.note}</span>`:""}</p>
+    <p>${fmt(it.usd)}</p>
+    <button type="button" class="btn s" data-del="${it.id}">Remove</button>
+  </div>`).join("") || `<p class="meta">Nothing saved yet. Add a stay, a bus, a meal or an attraction.</p>`;
+  $$("#diaryList [data-del]").forEach(b => b.onclick = () => {
+    state.diary = diaryItems().filter(x => x.id !== b.dataset.del);
+    save(); renderDiary();
+  });
+  const usd = items.reduce((s,it) => s + (+it.usd||0), 0);
+  const by = {};
+  items.forEach(it => { by[it.cat] = (by[it.cat]||0) + (+it.usd||0); });
+  sum.innerHTML = `<b>Trip spend ${fmt(usd)}</b><p class="meta">${Object.keys(CATL).map(k => `${CATL[k]} ${fmt(by[k]||0)}`).join(" · ")}</p>`;
+}
+const diaryForm = $("#diaryForm");
+if (diaryForm) diaryForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const place = ($("#dPlace").value || "").trim();
+  if (!place) return;
+  const cur = curCode();
+  const raw = +$("#dCost").value || 0;
+  const usd = raw / (rate(cur) || 1);
+  diaryItems().push({
+    id: Date.now().toString(36),
+    date: $("#dDate").value || new Date().toISOString().slice(0,10),
+    cat: $("#dCat").value,
+    place, note: $("#dNote").value || "", usd
+  });
+  save();
+  $("#dPlace").value = ""; $("#dNote").value = "";
+  renderDiary();
+});
+$$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
+  diaryFilter = b.dataset.dcat;
+  $$("#diaryChips .chip").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  renderDiary();
+});
 
 (function themeInit(){
   const saved = localStorage.getItem("lotuslane_theme") || "day";
