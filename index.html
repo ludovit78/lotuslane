@@ -536,11 +536,15 @@
               <option value="ferry">Ferry</option>
             </select>
           </div>
-          <div><label class="s" style="color:var(--muted)">Place</label><input type="text" id="dPlace" placeholder="Ubud room, VietJet, scooter shop…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
+          <div><label class="s" style="color:var(--muted)">Country</label>
+            <select id="dCountry" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
+          </div>
+          <div><label class="s" style="color:var(--muted)">Place / stay / flight</label><input type="text" id="dPlace" placeholder="Bangkok room, VietJet BKK–HAN…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div><label class="s" style="color:var(--muted)">Cost in current currency</label><input type="number" id="dCost" min="0" step="0.01" value="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Seat, plate, helmet included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add</button></div>
+          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add and stay here</button></div>
         </form>
+        <p class="meta" id="diaryStayNote">The form stays open so you can add more booked rooms and flights.</p>
         <div id="diaryCal" style="margin-top:16px"></div>
         <div class="toolbar" id="diaryChips" style="margin-top:12px">
           <button class="chip on" type="button" data-dcat="all">All</button>
@@ -553,6 +557,7 @@
         </div>
         <div id="diaryList"></div>
         <div id="diarySum" class="okbox" style="margin-top:12px"></div>
+        <div id="spendSplit" class="grid" style="margin-top:12px"></div>
         <div id="stayNear" style="margin-top:12px"></div>
       </div>
     </section>
@@ -2545,6 +2550,7 @@ function diaryItems() {
 function renderDiary() {
   const cal = $("#diaryCal"), list = $("#diaryList"), sum = $("#diarySum");
   if (!cal) return;
+  fillDiaryCountries();
   if ($("#dDate") && !$("#dDate").value) $("#dDate").value = new Date().toISOString().slice(0,10);
   const items = diaryItems();
   const y = diaryMonth.getFullYear(), m = diaryMonth.getMonth();
@@ -2571,7 +2577,7 @@ function renderDiary() {
   $$("#diaryCal [data-day]").forEach(b => b.onclick = () => { $("#dDate").value = b.dataset.day; });
   const shown = items.filter(it => diaryFilter === "all" || it.cat === diaryFilter).sort((a,b) => a.date.localeCompare(b.date));
   list.innerHTML = shown.map(it => `<div class="box" style="margin:8px 0;border-left:4px solid ${CATC[it.cat]}">
-    <b>${it.date} · ${CATL[it.cat] || it.cat}${it.mode ? " · " + (MODEL[it.mode] || it.mode) : ""}</b>
+    <b>${it.date} · ${CATL[it.cat] || it.cat}${it.mode ? " · " + (MODEL[it.mode] || it.mode) : ""}${it.country ? " · " + ((C.find(x=>x.id===it.country)||{}).name||"") : ""}</b>
     <p>${it.place} ${it.note?`<span class="meta">— ${it.note}</span>`:""}</p>
     <p>${fmt(it.usd)}</p>
     <button type="button" class="btn s" data-del="${it.id}">Remove</button>
@@ -2593,7 +2599,18 @@ function renderDiary() {
       ? `<b>Trip budget ${fmt(budUsd)}</b><p>Spent ${fmt(usd)} · <b>Remaining ${fmt(left)}</b></p><p class="meta">Stays ${fmt(by.stay||0)} · Flights ${fmt(by.flight||0)} · Bikes ${fmt(by.moto||0)} · Travel ${fmt(by.travel||0)} · Food ${fmt(by.food||0)} · Attractions ${fmt(by.see||0)}</p>`
       : `<p>Set a trip budget above to see what is left after stays, travel and food.</p>`;
   }
+  const split = $("#spendSplit");
+  if (split) {
+    split.innerHTML = Object.keys(CATL).map(k => `<div class="stat"><span>${CATL[k]}</span><b>${fmt(by[k]||0)}</b><span class="meta">${items.filter(it => it.cat===k).length} lines</span></div>`).join("");
+  }
   if ($("#tripBudget") && document.activeElement !== $("#tripBudget") && budUsd) $("#tripBudget").value = Math.round(toCur(budUsd));
+}
+function fillDiaryCountries() {
+  const sel = $("#dCountry");
+  if (!sel || sel.dataset.ready) return;
+  sel.append(new Option("Any / not set", ""));
+  C.forEach(c => sel.append(new Option(c.flag + " " + c.name, c.id)));
+  sel.dataset.ready = "1";
 }
 function matchNear(place) {
   const q = (place || "").toLowerCase();
@@ -2623,22 +2640,32 @@ if (saveBud) saveBud.onclick = () => {
 const diaryForm = $("#diaryForm");
 if (diaryForm) diaryForm.addEventListener("submit", e => {
   e.preventDefault();
+  e.stopPropagation();
+  fillDiaryCountries();
   const place = ($("#dPlace").value || "").trim();
   if (!place) return;
   const cur = curCode();
   const raw = +$("#dCost").value || 0;
   const usd = raw / (rate(cur) || 1);
+  const country = $("#dCountry") ? $("#dCountry").value : "";
+  const cname = (C.find(x => x.id === country) || {}).name || "";
   diaryItems().push({
     id: Date.now().toString(36),
     date: $("#dDate").value || new Date().toISOString().slice(0,10),
     cat: $("#dCat").value,
     mode: $("#dCat").value === "travel" ? $("#dMode").value : "",
-    place, note: $("#dNote").value || "", usd
+    country, place, note: $("#dNote").value || "", usd
   });
   save();
-  $("#dPlace").value = ""; $("#dNote").value = "";
+  const added = place;
+  const cat = $("#dCat").value;
+  $("#dPlace").value = "";
+  $("#dCost").value = "0";
+  const note = $("#diaryStayNote");
+  if (note) note.textContent = "Added " + added + ". Form stays open — add the next booking.";
   renderDiary();
-  if ($("#dCat").value === "stay") showStayNear(place);
+  if (cat === "stay") showStayNear(cname ? cname + " " + added : added);
+  $("#dPlace").focus();
 });
 $$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
   diaryFilter = b.dataset.dcat;
