@@ -482,8 +482,8 @@
     </section>
 
     <section id="plan" class="panel">
-      <h2>Build a route</h2>
-      <p class="meta">We stitch visa windows, vegan density and backpacker prices into a day-by-day sketch. Book flights and rooms on the linked sites.</p>
+      <h2>Your trip</h2>
+      <p class="meta">Add booked stays and flights. This page does not leave when you press Add.</p>
       <div class="box" style="margin:14px 0">
         <form class="plan-form" id="planForm">
           <div><label class="s" style="color:var(--muted)">Days</label><input type="number" id="days" min="7" max="180" value="30" style="background:#fff;color:var(--ink);border:1px solid var(--line)" /></div>
@@ -542,7 +542,7 @@
           <div><label class="s" style="color:var(--muted)">Place / stay / flight</label><input type="text" id="dPlace" placeholder="Bangkok room, VietJet BKK–HAN…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div><label class="s" style="color:var(--muted)">Cost in current currency</label><input type="number" id="dCost" min="0" step="0.01" value="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
           <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Seat, plate, helmet included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Add and stay here</button></div>
+          <div style="display:flex;align-items:end"><button class="btn p" type="button" id="addDiaryBtn" style="width:100%">Add to trip</button></div>
         </form>
         <p class="meta" id="diaryStayNote">The form stays open so you can add more booked rooms and flights.</p>
         <div id="diaryCal" style="margin-top:16px"></div>
@@ -789,6 +789,7 @@
   </footer>
 
 <script>
+document.addEventListener("submit", function (e) { e.preventDefault(); }, true);
 const NATS = [
   ["US","United States"],["GB","United Kingdom"],["DE","Germany"],["FR","France"],["IT","Italy"],
   ["ES","Spain"],["NL","Netherlands"],["IE","Ireland"],["SE","Sweden"],["PL","Poland"],
@@ -2638,12 +2639,10 @@ if (saveBud) saveBud.onclick = () => {
   save(); renderDiary();
 };
 const diaryForm = $("#diaryForm");
-if (diaryForm) diaryForm.addEventListener("submit", e => {
-  e.preventDefault();
-  e.stopPropagation();
+function addDiaryLine() {
   fillDiaryCountries();
   const place = ($("#dPlace").value || "").trim();
-  if (!place) return;
+  if (!place) { const n = $("#diaryStayNote"); if (n) n.textContent = "Type the place or flight first."; return; }
   const cur = curCode();
   const raw = +$("#dCost").value || 0;
   const usd = raw / (rate(cur) || 1);
@@ -2662,11 +2661,14 @@ if (diaryForm) diaryForm.addEventListener("submit", e => {
   $("#dPlace").value = "";
   $("#dCost").value = "0";
   const note = $("#diaryStayNote");
-  if (note) note.textContent = "Added " + added + ". Form stays open — add the next booking.";
+  if (note) note.textContent = "Added " + added + ". Still on this page — add the next one.";
   renderDiary();
   if (cat === "stay") showStayNear(cname ? cname + " " + added : added);
   $("#dPlace").focus();
-});
+}
+if (diaryForm) diaryForm.addEventListener("submit", e => { e.preventDefault(); addDiaryLine(); });
+const addBtn = $("#addDiaryBtn");
+if (addBtn) addBtn.onclick = e => { e.preventDefault(); addDiaryLine(); };
 $$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
   diaryFilter = b.dataset.dcat;
   $$("#diaryChips .chip").forEach(x => x.classList.remove("on"));
