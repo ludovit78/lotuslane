@@ -1,2720 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>LotusLane</title>
-  <meta name="description" content="Visa-smart, vegan-first, budget travel planner for Asia. Official e-visa links, itineraries, scooters, ferries and restaurants." />
-  <meta name="theme-color" content="#0c3b2e" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="LotusLane" />
-  <meta name="format-detection" content="telephone=no" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
-  <link rel="icon" href="icon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #f6efe4;
-      --bg-2: #ead7c0;
-      --ink: #12231c;
-      --muted: #5a6a62;
-      --green: #0b6b4f;
-      --green-2: #1a8f68;
-      --leaf: #2f8f6b;
-      --gold: #e09a2b;
-      --gold-soft: #f6d9a0;
-      --lotus: #e25d72;
-      --teal: #0e8f9a;
-      --indigo: #3b5bdb;
-      --card: rgba(255,252,247,.92);
-      --line: #e4d3bc;
-      --good: #1b7a4a;
-      --warn: #b45309;
-      --bad: #9b2c2c;
-      --ok: #1b7a4a;
-      --mid: #b45309;
-      --no: #9b2c2c;
-      --shadow: 0 18px 50px rgba(18,35,28,.12);
-      --r: 22px;
-      --glass: rgba(255,250,242,.72);
-    }
-    [data-theme="night"] {
-      --bg: #0d1612;
-      --bg-2: #16241c;
-      --ink: #e8efe8;
-      --muted: #9aada3;
-      --green: #1f6b52;
-      --green-2: #4ade80;
-      --card: rgba(18,32,26,.82);
-      --line: #2a3f35;
-      --glass: rgba(13,22,18,.7);
-      --shadow: 0 18px 50px rgba(0,0,0,.35);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { min-height: 100%; min-height: 100dvh; }
-    html { -webkit-text-size-adjust: 100%; }
-    body {
-      font-family: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background:
-        radial-gradient(900px 520px at 8% -8%, rgba(14,143,154,.22), transparent 55%),
-        radial-gradient(800px 480px at 100% 0%, rgba(226,93,114,.20), transparent 48%),
-        radial-gradient(700px 400px at 70% 110%, rgba(224,154,43,.22), transparent 50%),
-        var(--bg);
-      color: var(--ink);
-      line-height: 1.55;
-      overscroll-behavior: none;
-      -webkit-tap-highlight-color: transparent;
-      padding-bottom: calc(64px + env(safe-area-inset-bottom));
-    }
-    button, a, .chip, .feature { touch-action: manipulation; }
-    select, input { font-size: 16px !important; } /* stops iOS zoom-on-focus */
-    body::before {
-      content:"";
-      pointer-events:none;
-      position:fixed; inset:0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='2' cy='2' r='1' fill='%230b3d2e' opacity='.06'/%3E%3C/svg%3E");
-      z-index:0;
-    }
-    h1,h2,h3,.brand { font-family: Fraunces, Georgia, serif; letter-spacing: -.02em; }
-    a { color: var(--green-2); }
-    button, input, select, textarea { font: inherit; }
-    .wrap { width: min(1180px, calc(100% - 28px)); margin: 0 auto; position: relative; z-index: 1; }
-    header.app {
-      position: sticky; top: 0; z-index: 40;
-      backdrop-filter: blur(18px) saturate(1.2);
-      background: var(--glass);
-      border-bottom: 1px solid var(--line);
-      padding-top: env(safe-area-inset-top);
-    }
-    .nav { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; }
-    .logo {
-      width: 40px; height: 40px; border-radius: 14px;
-      background: radial-gradient(circle at 30% 30%, #3aa57a, var(--green));
-      color: #fff; display: grid; place-items: center; font-size: 20px;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
-    }
-    .theme-btn {
-      border: 1px solid var(--line); background: var(--card); width: 40px; height: 40px;
-      border-radius: 12px; cursor: pointer; font-size: 16px;
-    }
-    nav.links { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
-    nav.links button, .ghost {
-      border: 0; background: transparent; padding: 8px 12px; border-radius: 999px; cursor: pointer; color: var(--ink); font-weight: 600;
-    }
-    nav.links button.active, .ghost:hover { background: #fff; box-shadow: var(--shadow); }
-    .cta {
-      background: var(--green); color: #fff !important; border: 0; padding: 10px 14px; border-radius: 999px; font-weight: 700; cursor: pointer;
-    }
-    .hero { padding: 36px 0 18px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: center; }
-    .kicker { text-transform: uppercase; letter-spacing: .16em; font-size: .72rem; font-weight: 700; color: var(--green-2); }
-    h1 { font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.08; margin: 8px 0 12px; }
-    .lede { color: var(--muted); font-size: 1.08rem; max-width: 56ch; }
-    .passport-card {
-      background:
-        radial-gradient(280px 160px at 100% 0%, rgba(201,132,42,.35), transparent 50%),
-        linear-gradient(160deg, #0c3b2e 0%, #0a221c 100%);
-      color: #f6f1e6; border-radius: 28px; padding: 24px; box-shadow: var(--shadow);
-      position: relative; overflow: hidden;
-    }
-    .passport-card::after {
-      content:"🪷"; position:absolute; right:-8px; bottom:-18px; font-size:96px; opacity:.12;
-      pointer-events: none;
-    }
-    .passport-card .cta { position: relative; z-index: 2; }
-    .passport-card h2 { font-size: 1.35rem; margin-bottom: 6px; }
-    .passport-card p { opacity: .82; font-size: .92rem; margin-bottom: 14px; }
-    .row { display: grid; gap: 10px; }
-    label.s { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .8; }
-    select, input[type=text], input[type=date], input[type=number] {
-      width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid #2a5a48; background: #0a2c22; color: #fff;
-    }
-    .passport-card .cta { background: var(--gold); color: #1a1408 !important; width: 100%; margin-top: 8px; }
-    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 22px 0 8px; }
-    .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
-    .stat b { display: block; font-size: 1.3rem; }
-    .stat span { color: var(--muted); font-size: .86rem; }
-    .panel { display: none; padding: 8px 0 60px; animation: none; }
-    .panel.on { display: block; animation: rise .28s ease; }
-    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-    @keyframes pop { from { transform: scale(.96); } to { transform: none; } }
-    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 16px; align-items: center; }
-    .chip { border: 1px solid var(--line); background: #fff; padding: 7px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; transition: transform .15s ease, background .15s ease; }
-    .chip:active { transform: scale(.96); }
-    .chip.on { background: linear-gradient(135deg, var(--green), var(--teal)); color: #fff; border-color: transparent; }
-    .search { flex: 1; min-width: 180px; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 14px; }
-    .card {
-      background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
-      display: flex; flex-direction: column;
-      transition: transform .2s ease, box-shadow .2s ease;
-      backdrop-filter: blur(10px);
-    }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 22px 50px rgba(18,35,28,.16); }
-    .card .banner {
-      height: 108px; display: flex; align-items: flex-end; padding: 14px;
-      color: #fff; font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em;
-      position: relative;
-    }
-    .card .banner::after {
-      content:""; position:absolute; inset:0;
-      background: linear-gradient(180deg, transparent 20%, rgba(0,0,0,.28));
-    }
-    .card .banner span { position: relative; z-index: 1; }
-    .card .body { padding: 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .pill { font-size: .75rem; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
-    .vf { background: #d8f3e4; color: #14532d; }
-    .vo { background: #fff3d6; color: #7c4a03; }
-    .ev { background: #e0e7ff; color: #1e3a8a; }
-    .vr { background: #fde2e2; color: #7f1d1d; }
-    .vg { background: #ecfccb; color: #3f6212; }
-    .bd { background: #f1f5f9; color: #334155; }
-    .meta { color: var(--muted); font-size: .9rem; }
-    .actions { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
-    .btn { border: 0; border-radius: 12px; padding: 9px 12px; font-weight: 700; cursor: pointer; transition: transform .15s ease; }
-    .btn:active { transform: scale(.97); }
-    .btn.p { background: linear-gradient(135deg, var(--green), var(--teal, #0e8f9a)); color: #fff; }
-    .btn.s { background: #efe6d6; color: var(--ink); }
-    .heart { border:0; background:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; box-shadow:var(--shadow); }
-    .heart.on { background:#ffe4ea; }
-    .detail { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; }
-    .box { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
-    .box h3 { margin-bottom: 8px; }
-    ul.clean { padding-left: 18px; }
-    ul.clean li { margin: 6px 0; }
-    table { width: 100%; border-collapse: collapse; font-size: .94rem; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    .links-list a { display: inline-block; margin: 4px 8px 4px 0; font-weight: 700; }
-    .map-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-    .map-row a { text-decoration: none; }
-    .alert { background: #fff6e5; border: 1px solid #efd09a; padding: 12px 14px; border-radius: 14px; font-size: .92rem; }
-    .danger { background: #fdecec; border-color: #f2b6b6; }
-    .okbox { background: #e9f7ef; border: 1px solid #b7e0c8; padding: 12px 14px; border-radius: 14px; }
-    .itinerary-day { border-left: 3px solid var(--leaf); padding: 0 0 16px 14px; margin-left: 6px; }
-    .itinerary-day b { display: block; }
-    footer { border-top: 1px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: .88rem; }
-    @media (max-width: 860px) {
-      .hero, .detail, .stats { grid-template-columns: 1fr; }
-      nav.links, header.app .cta { display: none; }
-      .mobile-nav { display: flex !important; }
-      .panel { padding-bottom: 28px; }
-      .btn, .cta, #unlockBtn { min-height: 48px; font-size: 1.02rem; }
-      .chip { min-height: 36px; }
-    }
-    .mobile-nav {
-      display: none; position: fixed; bottom: 0; left: 0; right: 0;
-      background: rgba(255,253,248,.94); backdrop-filter: blur(16px);
-      border-top: 1px solid var(--line);
-      justify-content: space-around; align-items: flex-end;
-      padding: 6px 4px calc(8px + env(safe-area-inset-bottom));
-      z-index: 80;
-    }
-    .mobile-nav button {
-      border: 0; background: 0; font-size: .64rem; font-weight: 700;
-      min-width: 56px; min-height: 48px; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-      pointer-events: auto;
-    }
-    .mobile-nav button.active { color: var(--lotus); }
-    .mobile-nav button span { font-size: 1.15rem; line-height: 1; pointer-events: none; }
-    .install-sheet, #installHint { display: none !important; }
-    .hidden { display: none !important; }
-    .plan-form { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
-    @media (max-width: 860px) { .plan-form { grid-template-columns: 1fr 1fr; } }
-    .budget-bar { height: 10px; background: #efe6d6; border-radius: 99px; overflow: hidden; }
-    .budget-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--leaf), var(--gold)); }
-    .rates-bar {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-      background: #fff; border: 1px solid var(--line); border-radius: 14px;
-      padding: 10px 14px; margin: 14px 0; font-size: .92rem;
-    }
-    .rates-bar b { font-family: Fraunces, Georgia, serif; }
-    .fx small { color: var(--muted); font-weight: 600; margin-left: 4px; }
-    .gov-grid { display: grid; gap: 8px; }
-    .gov-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .tag { font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-    .feature-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin:22px 0; }
-    .feature {
-      background: var(--card); border:1px solid var(--line); border-radius:18px; padding:16px;
-      cursor:pointer; text-align:left; box-shadow: var(--shadow);
-    }
-    .feature b { display:block; font-family:Fraunces,Georgia,serif; font-size:1.05rem; margin:6px 0 4px; }
-    .feature span { color:var(--muted); font-size:.88rem; }
-    .ico { width:36px; height:36px; border-radius:12px; display:grid; place-items:center; background:#e7f4ee; }
-    [data-theme="night"] .ico { background:#1a332a; }
-    .tool-out { margin-top:14px; }
-    .pack li { list-style:none; margin:6px 0; }
-    .pack input { margin-right:8px; }
-    .season { display:grid; grid-template-columns:repeat(12,1fr); gap:4px; margin-top:10px; }
-    .mo { text-align:center; font-size:.7rem; font-weight:700; padding:8px 2px; border-radius:8px; }
-    .mo.g { background:#d8f3e4; color:#14532d; }
-    .mo.m { background:#fff3d6; color:#7c4a03; }
-    .mo.b { background:#fde2e2; color:#7f1d1d; }
-    [data-theme="night"] .mo.g { background:#14532d; color:#bbf7d0; }
-    [data-theme="night"] .mo.m { background:#7c4a03; color:#fde68a; }
-    [data-theme="night"] .mo.b { background:#7f1d1d; color:#fecaca; }
-    .phrase { display:grid; grid-template-columns:1fr 1.2fr; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
-    .big-stat { font-family:Fraunces,Georgia,serif; font-size:2rem; }
-    .split3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    @media (max-width:860px){ .split3, .season { grid-template-columns:repeat(4,1fr); } .phrase { grid-template-columns:1fr; } }
-    .proof { display:inline-block; font-size:.68rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; background:#efe6d6; color:#3d2a10; padding:3px 8px; border-radius:999px; }
-    .proof.live { background:#d8f3e4; color:#14532d; }
-    .proof.warn { background:#fff3d6; color:#7c4a03; }
-    .scout-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    @media (max-width:860px){ .scout-grid { grid-template-columns:1fr; } }
-    .rec-card { border:1px solid var(--line); background:var(--card); border-radius:18px; padding:16px; }
-    .rec-card h3 { margin-bottom:4px; }
-    .why { font-size:.9rem; color:var(--muted); margin:6px 0 10px; }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0c3b2e"/>
+<title>LotusLane</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#14241c;--muted:#5d6e66;--green:#0c6b4f;--teal:#0e8f9a;--gold:#e09a2b;--lotus:#e25d72;--bg:#f6efe4;--card:#fffdf9;--line:#e6d7c2;--r:20px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Source Sans 3",system-ui,sans-serif;color:var(--ink);background:radial-gradient(700px 400px at 0 0,rgba(14,143,154,.18),transparent 50%),radial-gradient(600px 380px at 100% 0,rgba(226,93,114,.16),transparent 46%),var(--bg);padding-bottom:calc(78px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;letter-spacing:-.02em}
+button,input,select{font:inherit;font-size:16px}
+.wrap{width:min(980px,calc(100% - 24px));margin:0 auto}
+header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 0 calc(10px + env(safe-area-inset-top))}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#0c6b4f,#0e8f9a);color:#fff}
+.panel{display:none;padding:16px 0 24px;animation:rise .25s ease}
+.panel.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card,.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:0 12px 30px rgba(20,36,28,.06)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+@media(max-width:640px){.form{grid-template-columns:1fr}}
+label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+input,select{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-weight:700;background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;cursor:pointer;width:100%}
+.btn.s{background:#efe6d6;color:var(--ink)}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:700;cursor:pointer}
+.chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.stat b{display:block;font-size:1.2rem}
+.ok{background:#e9f7ef;border:1px solid #b7e0c8;border-radius:14px;padding:12px;margin:8px 0}
+.bad{background:#fdecec;border:1px solid #f2b6b6;border-radius:14px;padding:12px;margin:8px 0}
+.meta{color:var(--muted);font-size:.92rem}
+.line{border-left:4px solid var(--teal);margin:8px 0}
+nav.bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:rgba(255,253,248,.96);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
+nav.bar button{border:0;background:0;min-width:56px;min-height:48px;color:var(--muted);font-weight:700;font-size:.68rem;display:flex;flex-direction:column;align-items:center}
+nav.bar button.on{color:var(--lotus)}
+a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
+.hero{display:grid;gap:12px}
+.kicker{letter-spacing:.14em;text-transform:uppercase;font-size:.72rem;font-weight:700;color:var(--green)}
+</style>
 </head>
 <body>
-  <header class="app">
-    <div class="wrap nav">
-      <div class="brand"><div class="logo">🪷</div> LotusLane</div>
-      <nav class="links">
-        <button data-go="home" class="active">Home</button>
-        <button data-go="explore">Countries</button>
-        <button data-go="fly">Scout</button>
-        <button data-go="move">Move</button>
-        <button data-go="play">Play</button>
-        <button data-go="sights">Sights</button>
-        <button data-go="plan">Plan</button>
-        <button data-go="tools">Tools</button>
-        <button data-go="visa">Visa</button>
-        <button data-go="eats">Eats</button>
-      </nav>
-      <button class="theme-btn" id="themeBtn" title="Night mode">☾</button>
-      <button class="cta" data-go="visa">Visa desk</button>
-    </div>
-  </header>
-  <div class="wrap">
-    <div class="rates-bar" id="ratesBar">Loading live USD → GBP / EUR rates…</div>
+<header><div class="wrap brand"><div class="logo">🪷</div><div>LotusLane<small class="meta" style="display:block">Asia planner · Slovak passport ready</small></div></div></header>
+<main class="wrap">
+<section id="home" class="panel on">
+  <p class="kicker">Budget · vegan · official visas</p>
+  <h1>Plan the trip. Stay on the page.</h1>
+  <p class="meta">Add countries, stays, flights and costs. Nothing reloads. Prices open Google Flights, 12Go, Agoda and Klook.</p>
+  <div class="grid" style="margin-top:14px">
+    <button class="box" data-go="plan"><b>Trip</b><span class="meta">Stays, flights, spend</span></button>
+    <button class="box" data-go="map"><b>Countries</b><span class="meta">Visa + vegan score</span></button>
+    <button class="box" data-go="scout"><b>Scout</b><span class="meta">Cheap flights & rooms</span></button>
+    <button class="box" data-go="play"><b>Places</b><span class="meta">Beaches, food, nature</span></button>
   </div>
+  <div class="box" style="margin-top:12px">
+    <label>Passport</label>
+    <select id="nat"></select>
+    <p class="meta" style="margin-top:8px">Official government links only. Confirm before you fly. Thailand visa-exempt stays for many passports are 30 days from 15 September 2026.</p>
+  </div>
+</section>
 
-  <main class="wrap">
-    <section id="home" class="panel on">
-      <div class="hero">
-        <div>
-          <div class="kicker">Budget · vegan · visa-smart Asia</div>
-          <h1>Plan Asia around your passport, plate, and budget.</h1>
-          <p class="lede">LotusLane maps visa-free stays, official e-visa portals, vegan cities, hostel-level prices, scooters and ferries. You keep your passport data. We only remember nationality and trip dates on this device.</p>
-        </div>
-        <form class="passport-card" id="passportForm">
-          <h2>Travel profile</h2>
-          <p>No passport number is stored. We use nationality to score visa access across Asia.</p>
-          <div class="row">
-            <div>
-              <label class="s">Passport</label>
-              <select id="nat" required></select>
-            </div>
-            <div>
-              <label class="s">Diet</label>
-              <select id="diet">
-                <option value="vegan">Vegan</option>
-                <option value="veg">Vegetarian</option>
-                <option value="flex">Flexible / omnivore</option>
-              </select>
-            </div>
-            <div>
-              <label class="s">Daily budget</label>
-              <select id="budget">
-                <option value="25">Backpacker ~$25 / day</option>
-                <option value="40" selected>Lean mid ~$40 / day</option>
-                <option value="70">Comfort ~$70 / day</option>
-                <option value="120">Flashpacker ~$120 / day</option>
-              </select>
-            </div>
-            <div>
-              <label class="s">Trip start</label>
-              <input type="date" id="start" />
-            </div>
-            <div>
-              <label class="s">Show prices in</label>
-              <select id="cur">
-                <option value="GBP">British pound £</option>
-                <option value="EUR">Euro €</option>
-                <option value="USD">US dollar $</option>
-                <option value="THB">Thai baht ฿</option>
-                <option value="VND">Vietnam dong ₫</option>
-                <option value="IDR">Indonesia rupiah</option>
-                <option value="MYR">Malaysia ringgit</option>
-                <option value="PHP">Philippine peso</option>
-                <option value="SGD">Singapore dollar</option>
-                <option value="INR">Indian rupee</option>
-                <option value="JPY">Japanese yen</option>
-                <option value="KRW">Korean won</option>
-              </select>
-            </div>
-            <button class="cta" type="button" id="unlockBtn" onclick="unlockMap()">Unlock my Asia map</button>
-          </div>
-        </form>
-      </div>
-      <div class="stats">
-        <div class="stat"><b>28</b><span>destinations mapped</span></div>
-        <div class="stat"><b>Official</b><span>government visa links only</span></div>
-        <div class="stat"><b id="statScoot">$4–10</b><span>typical scooter / day</span></div>
-        <div class="stat"><b>Jay · Chay · Sattvic</b><span>vegan food codes</span></div>
-      </div>
-      <div class="alert" style="margin-top:16px">
-        Thailand’s visa-exempt stay for many nationalities dropped to <b>30 days from 15 September 2026</b>. Always confirm on the official embassy / immigration site before you fly. LotusLane is a planner, not a visa agent.
-      </div>
-      <div class="box" style="margin-top:14px;background:linear-gradient(135deg,#fff8ee,#e7f7f4)">
-        <h3>How this sits next to the big apps</h3>
-        <p class="meta">Wanderlog owns shared day lists. Nomads.com ranks cities for Wi‑Fi. Klook sells tickets. HappyCow maps vegan food. LotusLane is the layer they skip: <b>passport + vegan + budget + official visas</b>, then it hands you those apps for live prices.</p>
-        <p class="meta" style="margin-top:8px">Still missing vs them: group editing, Gmail import, offline vector maps, live fare APIs (they don’t publish those without paid keys). Hearts save favourites on this phone.</p>
-      </div>
-      
-      <div class="feature-grid">
-        <button class="feature" data-go="tools"><div class="ico">🧮</div><b>Budget lab</b><span>Trip cost in $ £ €</span></button>
-        <button class="feature" data-go="tools"><div class="ico">🎒</div><b>Pack list</b><span>Climate + vegan kit</span></button>
-        <button class="feature" data-go="tools"><div class="ico">🌧️</div><b>Seasons</b><span>When Asia is kind</span></button>
-        <button class="feature" data-go="tools"><div class="ico">🔌</div><b>Plugs & SIMs</b><span>Type C/A/G + eSIM</span></button>
-        <button class="feature" data-go="tools"><div class="ico">🆘</div><b>SOS numbers</b><span>Police, hospitals</span></button>
-        <button class="feature" data-go="tools"><div class="ico">🗣️</div><b>Vegan phrases</b><span>Jay, chay, sattvic</span></button>
-        <button class="feature" data-go="play"><div class="ico">🏝️</div><b>Beaches & dive</b><span>Spas, shops, music</span></button>
-        <button class="feature" data-go="play"><div class="ico">🧘</div><b>Yoga & sound</b><span>Retreats, temples, gongs</span></button>
-        <button class="feature" data-go="plan"><div class="ico">🗺️</div><b>Route builder</b><span>Day-by-day sketch</span></button>
-        <button class="feature" data-go="fly"><div class="ico">🤖</div><b>Scout bot</b><span>Cheap flights, rooms, trains</span></button>
-      </div>
-      <div class="box" style="margin:18px 0 8px">
-        <h3>Near you</h3>
-        <p class="meta">Uses this phone’s location once. Food, sights and nature + Klook tickets for that city.</p>
-        <div class="actions" style="margin:8px 0">
-          <button class="btn p" type="button" id="nearBtn">Use my location</button>
-        </div>
-        <div id="nearOut"></div>
-      </div>
-      <div class="box" style="margin:18px 0 8px">
-        <h3>Smart picks for you</h3>
-        <p class="meta">Scored from your passport, diet and daily budget. Not ads.</p>
-        <div id="homeRecs" class="scout-grid" style="margin-top:12px"></div>
-      </div>
-    </section>
-
-    <section id="fly" class="panel">
-      <h2>Scout bot</h2>
-      <p class="meta">Opens the same route on live booking engines. LotusLane never invents a fare. Green = live price on that site. Amber = typical 2026 traveller band only.</p>
-      <form class="box plan-form" id="flyForm" style="margin:14px 0">
-        <div>
-          <label class="s" style="color:var(--muted)">From</label>
-          <select id="flyFrom" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
-        </div>
-        <div>
-          <label class="s" style="color:var(--muted)">To</label>
-          <select id="flyTo" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
-        </div>
-        <div>
-          <label class="s" style="color:var(--muted)">Depart</label>
-          <input type="date" id="flyDate" style="background:#fff;color:var(--ink);border:1px solid var(--line)" />
-        </div>
-        <div>
-          <label class="s" style="color:var(--muted)">Return (optional)</label>
-          <input type="date" id="flyBack" style="background:#fff;color:var(--ink);border:1px solid var(--line)" />
-        </div>
-        <div>
-          <label class="s" style="color:var(--muted)">Room nights</label>
-          <input type="number" id="stayNights" min="1" max="60" value="5" style="background:#fff;color:var(--ink);border:1px solid var(--line)" />
-        </div>
-        <div style="grid-column:1/-1" class="actions">
-          <button class="btn p" type="submit">Scout cheapest options</button>
-        </div>
-      </form>
-      <div id="flyLinks" style="margin-bottom:16px"></div>
-      <h3>Usual bargain hops</h3>
-      <p class="meta">Tap a route to load it into the search. Fares are typical sale ranges, not live quotes.</p>
-      <div class="grid" id="hopGrid" style="margin-top:12px"></div>
-    </section>
-
-    <section id="sights" class="panel">
-      <h2>Sights & markets</h2>
-      <p class="meta">Temple loops, old towns and the markets where you actually eat. Filter by country.</p>
-      <div class="toolbar">
-        <input class="search" id="sq" placeholder="Angkor, Chatuchak, Tsukiji…" />
-      </div>
-      <div id="sightsList"></div>
-    </section>
-
-    <section id="play" class="panel">
-      <h2>Beaches, spas, yoga, sound baths, dive, music, shops</h2>
-      <p class="meta">Tap a category. Prices are typical 2026 traveller ranges, shown in USD + live £ / €.</p>
-      <div class="toolbar" id="playChips">
-        <button class="chip on" data-play="beach">Beaches</button>
-        <button class="chip" data-play="yoga">Yoga</button>
-        <button class="chip" data-play="sit">Meditation</button>
-        <button class="chip" data-play="sound">Sound baths</button>
-        <button class="chip" data-play="spa">Spas</button>
-        <button class="chip" data-play="dive">Scuba</button>
-        <button class="chip" data-play="music">Live music</button>
-        <button class="chip" data-play="shop">Shops</button>
-        <button class="chip" data-play="stay">Stays</button>
-        <button class="chip" data-play="nature">Nature</button>
-      </div>
-      <input class="search" id="pq" placeholder="Ubud Yoga Barn, Rishikesh, Kopan…" style="margin-bottom:14px" />
-      <div id="playList"></div>
-    </section>
-
-    <section id="explore" class="panel">
-      <h2>Destinations</h2>
-      <p class="meta" id="exploreHint">Set your passport on Home to personalise visa badges.</p>
-      <div class="toolbar">
-        <input class="search" id="q" placeholder="Search Chiang Mai, Georgia, ferries…" />
-        <button class="chip on" data-f="all">All</button>
-        <button class="chip" data-f="easy">Visa-easy</button>
-        <button class="chip" data-f="vegan">Top vegan</button>
-        <button class="chip" data-f="cheap">Under $40/day</button>
-        <button class="chip" data-f="sea">Southeast Asia</button>
-        <button class="chip" data-f="long">Long-stay options</button>
-      </div>
-      <div class="grid" id="cards"></div>
-    </section>
-
-    <section id="country" class="panel">
-      <button class="ghost" data-go="explore">← All countries</button>
-      <div id="countryView"></div>
-    </section>
-
-    <section id="plan" class="panel">
-      <h2>Your trip</h2>
-      <p class="meta">Add booked stays and flights. This page does not leave when you press Add.</p>
-      <div class="box" style="margin:14px 0">
-        <form class="plan-form" id="planForm">
-          <div><label class="s" style="color:var(--muted)">Days</label><input type="number" id="days" min="7" max="180" value="30" style="background:#fff;color:var(--ink);border:1px solid var(--line)" /></div>
-          <div><label class="s" style="color:var(--muted)">Pace</label>
-            <select id="pace" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
-              <option value="slow">Slow / few bases</option>
-              <option value="classic" selected>Classic loop</option>
-              <option value="islands">Islands & ferries</option>
-            </select>
-          </div>
-          <div><label class="s" style="color:var(--muted)">Start region</label>
-            <select id="region" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
-              <option value="sea">Southeast Asia</option>
-              <option value="east">East Asia</option>
-              <option value="south">South Asia</option>
-              <option value="mix">Best vegan mix</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Generate plan</button></div>
-        </form>
-      </div>
-      <div id="planOut"></div>
-
-        <div class="box" style="margin:18px 0">
-        <h3>My trip diary</h3>
-        <p class="meta">Set a whole-trip budget. Every stay, flight, bike, bus, meal and ticket comes off it.</p>
-        <div class="plan-form" style="margin:10px 0">
-          <div><label class="s" style="color:var(--muted)">Trip budget (current currency)</label><input type="number" id="tripBudget" min="0" step="1" value="2000" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn s" type="button" id="saveBudget">Save budget</button></div>
-        </div>
-        <div id="remainBox" class="okbox" style="margin:8px 0 12px"></div>
-        <p class="meta">Stays, flights, motorcycle hire, bus / train / taxi, food and attractions. Add or remove any line. Saved on this phone.</p>
-        <form class="plan-form" id="diaryForm" style="margin-top:12px">
-          <div><label class="s" style="color:var(--muted)">Date</label><input type="date" id="dDate" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Category</label>
-            <select id="dCat" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
-              <option value="stay">Accommodation</option>
-              <option value="flight">Flight</option>
-              <option value="moto">Motorcycle rental</option>
-              <option value="travel">Travel</option>
-              <option value="food">Food</option>
-              <option value="see">Attraction</option>
-            </select>
-          </div>
-          <div id="dModeWrap"><label class="s" style="color:var(--muted)">Travel type</label>
-            <select id="dMode" style="background:#fff;color:var(--ink);border:1px solid var(--line)">
-              <option value="bus">Bus</option>
-              <option value="train">Train</option>
-              <option value="taxi">Taxi</option>
-              <option value="ferry">Ferry</option>
-            </select>
-          </div>
-          <div><label class="s" style="color:var(--muted)">Country</label>
-            <select id="dCountry" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
-          </div>
-          <div><label class="s" style="color:var(--muted)">Place / stay / flight</label><input type="text" id="dPlace" placeholder="Bangkok room, VietJet BKK–HAN…" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">Cost in current currency</label><input type="number" id="dCost" min="0" step="0.01" value="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="grid-column:1/-1"><label class="s" style="color:var(--muted)">Note</label><input type="text" id="dNote" placeholder="Seat, plate, helmet included" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="button" id="addDiaryBtn" style="width:100%">Add to trip</button></div>
-        </form>
-        <p class="meta" id="diaryStayNote">The form stays open so you can add more booked rooms and flights.</p>
-        <div id="diaryCal" style="margin-top:16px"></div>
-        <div class="toolbar" id="diaryChips" style="margin-top:12px">
-          <button class="chip on" type="button" data-dcat="all">All</button>
-          <button class="chip" type="button" data-dcat="stay">Stays</button>
-          <button class="chip" type="button" data-dcat="flight">Flights</button>
-          <button class="chip" type="button" data-dcat="moto">Motorbikes</button>
-          <button class="chip" type="button" data-dcat="travel">Bus / train / taxi</button>
-          <button class="chip" type="button" data-dcat="food">Food</button>
-          <button class="chip" type="button" data-dcat="see">Attractions</button>
-        </div>
-        <div id="diaryList"></div>
-        <div id="diarySum" class="okbox" style="margin-top:12px"></div>
-        <div id="spendSplit" class="grid" style="margin-top:12px"></div>
-        <div id="stayNear" style="margin-top:12px"></div>
-      </div>
-    </section>
-
-    <section id="visa" class="panel">
-      <h2>Visa desk</h2>
-      <div class="alert danger" style="margin:12px 0 16px">
-        <b>We never collect or store passport numbers, scans or dates of birth.</b>
-        Real e-visas are issued only by governments. LotusLane opens the official portal and gives you a packing checklist.
-      </div>
-      <div class="detail">
-        <div class="box">
-          <h3>Checklist before you apply</h3>
-          <ul class="clean">
-            <li>Passport valid <b>6 months</b> beyond entry (most of Asia).</li>
-            <li>Blank page or two for stamps if not fully electronic.</li>
-            <li>Digital photo: white background, recent, JPEG under 2 MB.</li>
-            <li>Onward / return ticket and hotel address for first nights.</li>
-            <li>Proof of funds if asked (bank screenshot or cards).</li>
-            <li>Yellow-fever certificate only if you arrive from a risk country.</li>
-          </ul>
-          <h3 style="margin-top:16px">Extension reality check</h3>
-          <p class="meta">Extensions are done in-country at immigration, not by this app. Typical tourist extensions: Indonesia VOA +30 days at immigration; Thailand via visa / DTV for long stays; Vietnam 90-day e-visa is the simple long option for many passports.</p>
-        </div>
-        <div class="box">
-          <h3>Open official portals</h3>
-          <div class="links-list" id="visaLinks"></div>
-          <p class="meta" style="margin-top:12px">Arrival cards (not visas) you still need: Thailand TDAC, Malaysia MDAC, Singapore SGAC, Philippines eTravel, South Korea K-ETA for some passports.</p>
-        </div>
-      </div>
-      <div id="visaMatrix" style="margin-top:18px"></div>
-    </section>
-
-    <section id="eats" class="panel">
-      <h2>Vegan Asia field guide</h2>
-      <p class="meta">Look for these marks and phrases. Tap HappyCow for live maps.</p>
-      <div class="grid" style="margin-top:14px">
-        <div class="card"><div class="body">
-          <h3>Thailand — เจ (jay)</h3>
-          <p>Buddhist vegan: no meat, fish sauce, dairy, garlic or onion. Chiang Mai and Bangkok are dense and cheap ($1.50–4 a plate). Vegetarian Festival each autumn.</p>
-          <a href="https://www.happycow.net/asia/thailand/" target="_blank" rel="noopener">HappyCow Thailand</a>
-        </div></div>
-        <div class="card"><div class="body">
-          <h3>Vietnam — chay</h3>
-          <p>Ask for phở chay, bún chay, cơm chay. Ho Chi Minh City is one of the fastest-growing vegan scenes in the world. Watch nước mắm (fish sauce).</p>
-          <a href="https://www.happycow.net/asia/vietnam/" target="_blank" rel="noopener">HappyCow Vietnam</a>
-        </div></div>
-        <div class="card"><div class="body">
-          <h3>Taiwan — certified vegan logo</h3>
-          <p>Highest vegan restaurant density in Asia with a national TFDA vegan mark. Taipei is the easiest “eat anything on the street” city for plant-based travellers.</p>
-          <a href="https://www.happycow.net/asia/taiwan/" target="_blank" rel="noopener">HappyCow Taiwan</a>
-        </div></div>
-        <div class="card"><div class="body">
-          <h3>India — green dot ≠ vegan</h3>
-          <p>Huge vegetarian culture. Say “no ghee, no paneer, no curd, no honey.” South India (Bengaluru, Kerala) and Rishikesh are especially easy.</p>
-          <a href="https://www.happycow.net/asia/india/" target="_blank" rel="noopener">HappyCow India</a>
-        </div></div>
-        <div class="card"><div class="body">
-          <h3>Indonesia — tempeh heartland</h3>
-          <p>Tofu and tempeh everywhere. In Bali, Ubud/Canggu are packed with vegan cafés. Watch terasi (shrimp paste) in sambal.</p>
-          <a href="https://www.happycow.net/asia/indonesia/" target="_blank" rel="noopener">HappyCow Indonesia</a>
-        </div></div>
-        <div class="card"><div class="body">
-          <h3>Japan — dashi trap</h3>
-          <p>Tokyo and Kyoto have excellent vegan ramen and shōjin ryōri. Outside big cities, assume dashi (fish stock) unless you ask.</p>
-          <a href="https://www.happycow.net/asia/japan/" target="_blank" rel="noopener">HappyCow Japan</a>
-        </div></div>
-      </div>
-    </section>
-
-    <section id="move" class="panel">
-      <h2>Trains, buses, taxis, scooters</h2>
-      <p class="meta">2026 street prices. Wear a helmet. Many insurance policies exclude unlicensed scooter riding.</p>
-      <div class="box" style="margin-top:14px">
-        <h3>Book ground transport</h3>
-        <div class="actions">
-          <a class="btn p" href="https://12go.asia" target="_blank" rel="noopener">12Go trains / buses / ferries</a>
-          <a class="btn s" href="https://www.baolau.com" target="_blank" rel="noopener">Baolau Vietnam</a>
-          <a class="btn s" href="https://www.irctc.co.in" target="_blank" rel="noopener">IRCTC India</a>
-          <a class="btn s" href="https://www.rome2rio.com" target="_blank" rel="noopener">Rome2Rio door-to-door</a>
-        </div>
-        <p class="meta" style="margin-top:10px">Ride-hail: <b>Grab</b> (TH, VN, MY, SG, PH, ID, KH) · <b>Gojek</b> (ID) · <b>Bolt</b> (some TH/PH) · <b>inDrive</b> · Japan is rail + IC cards, not Grab.</p>
-      </div>
-      <div class="box" style="margin-top:14px; overflow:auto">
-        <table>
-          <thead><tr><th>Place</th><th>Scooter / day</th><th>Useful ferry / hop</th><th>Book</th></tr></thead>
-          <tbody id="moveBody"></tbody>
-        </table>
-      </div>
-      <div class="box" style="margin-top:14px">
-        <h3>Cheap flight search (opens new tab)</h3>
-        <p class="meta">Intra-Asia budget carriers: AirAsia, VietJet, Scoot, Cebu Pacific, Citilink, Lion Air. Book 3–6 weeks out. Typical hops $30–90.</p>
-        <div class="actions">
-          <a class="btn p" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">Google Flights</a>
-          <a class="btn s" href="https://www.kayak.com/flights" target="_blank" rel="noopener">Kayak</a>
-          <a class="btn s" href="https://www.kiwi.com" target="_blank" rel="noopener">Kiwi</a>
-          <a class="btn s" href="https://www.agoda.com" target="_blank" rel="noopener">Agoda stays</a>
-          <a class="btn s" href="https://www.booking.com" target="_blank" rel="noopener">Booking.com</a>
-        </div>
-      </div>
-    </section>
-
-    <section id="tools" class="panel">
-      <h2>Traveller tools</h2>
-      <p class="meta">Everything here runs on this phone. No account. Currency uses the live rates at the top of the app.</p>
-
-      <div class="box" style="margin:16px 0">
-        <h3>Trip budget lab</h3>
-        <form class="plan-form" id="budForm">
-          <div><label class="s" style="color:var(--muted)">Days</label><input type="number" id="bDays" min="3" max="365" value="30" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" id="labDaily" style="color:var(--muted)">Daily spend</label><input type="number" id="bDaily" min="0" max="20000000" value="40" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" id="labFly" style="color:var(--muted)">Flights return</label><input type="number" id="bFly" min="0" max="20000000" value="650" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" id="labVisa" style="color:var(--muted)">Visas + shots</label><input type="number" id="bVisa" min="0" max="20000000" value="80" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div style="display:flex;align-items:end"><button class="btn p" type="submit" style="width:100%">Calculate</button></div>
-        </form>
-        <div id="budOut" class="tool-out" style="min-height:140px;margin-top:14px;padding:16px;border-radius:18px;background:linear-gradient(160deg,#0c3b2e,#0e8f9a);color:#fff">
-          <p class="meta" style="color:#d7fff0">Results appear here as soon as you change a number.</p>
-        </div>
-      </div>
-
-      <div class="box" style="margin:16px 0">
-        <h3>Price window</h3>
-        <p class="meta">Type any amount in one currency. Every other currency updates live.</p>
-        <div class="plan-form" style="margin:10px 0">
-          <div><label class="s" style="color:var(--muted)">Amount</label><input type="number" id="fxAmt" value="40" min="0" style="background:#fff;color:var(--ink);border:1px solid var(--line)"/></div>
-          <div><label class="s" style="color:var(--muted)">This is</label>
-            <select id="fxFrom" style="background:#fff;color:var(--ink);border:1px solid var(--line)"></select>
-          </div>
-        </div>
-        <div id="fxBoard" class="grid" style="margin-top:12px"></div>
-      </div>
-
-      <div class="detail">
-        <div class="box">
-          <h3>Packing list</h3>
-          <div class="toolbar">
-            <button class="chip on" data-pack="sea">Hot / SEA</button>
-            <button class="chip" data-pack="him">Hills / Himalaya</button>
-            <button class="chip" data-pack="city">City / East Asia</button>
-            <button class="chip" data-pack="dive">Dive bag</button>
-            <button class="chip" data-pack="still">Yoga / sit</button>
-          </div>
-          <ul class="pack" id="packList"></ul>
-        </div>
-        <div class="box">
-          <h3>Best months</h3>
-          <p class="meta">Green = usually kinder. Amber = mixed / shoulder. Red = monsoon, typhoon or deep freeze for that loop.</p>
-          <div id="seasonBox"></div>
-        </div>
-      </div>
-
-      <div class="detail" style="margin-top:14px">
-        <div class="box">
-          <h3>Plugs, power, SIMs</h3>
-          <table>
-            <thead><tr><th>Place</th><th>Plug</th><th>Volts</th><th>SIM / eSIM</th></tr></thead>
-            <tbody>
-              <tr><td>Thailand, Vietnam, Cambodia, Laos</td><td>A / C / O</td><td>220</td><td>AIS / Viettel / Cellcard · Airalo / Holafly eSIM</td></tr>
-              <tr><td>Indonesia, Malaysia, Singapore</td><td>C / F / G</td><td>230</td><td>Telkomsel, Celcom, Singtel · Grab often needs local number</td></tr>
-              <tr><td>Philippines</td><td>A / B / C</td><td>220</td><td>Globe / Smart tourist eSIM</td></tr>
-              <tr><td>Japan</td><td>A / B (no earth)</td><td>100</td><td>bring a US-style two-pin + 100V check · eSIM easy</td></tr>
-              <tr><td>Korea, Taiwan</td><td>C / A / F</td><td>220</td><td>airport tourist SIM desks</td></tr>
-              <tr><td>India, Sri Lanka, Nepal</td><td>C / D / M / G</td><td>230</td><td>Airtel / Jio need passport + photo at a shop</td></tr>
-              <tr><td>Georgia, Central Asia</td><td>C / F</td><td>220</td><td>Magti / Beeline stalls in malls</td></tr>
-            </tbody>
-          </table>
-          <p class="meta" style="margin-top:8px">One compact C+A+G travel adapter covers almost all of this map. Japan is the odd 100V case.</p>
-        </div>
-        <div class="box">
-          <h3>Emergency & useful numbers</h3>
-          <table>
-            <thead><tr><th>Place</th><th>Police / ambulance</th></tr></thead>
-            <tbody>
-              <tr><td>Thailand</td><td>191 police · 1669 ambulance · 1155 tourist police</td></tr>
-              <tr><td>Vietnam</td><td>113 police · 115 ambulance</td></tr>
-              <tr><td>Indonesia</td><td>110 police · 118 ambulance</td></tr>
-              <tr><td>Malaysia / Singapore</td><td>999 / 995</td></tr>
-              <tr><td>Philippines</td><td>911</td></tr>
-              <tr><td>Japan</td><td>110 police · 119 fire/ambulance</td></tr>
-              <tr><td>South Korea</td><td>112 / 119</td></tr>
-              <tr><td>India</td><td>112 unified</td></tr>
-              <tr><td>Georgia</td><td>112</td></tr>
-            </tbody>
-          </table>
-          <p class="meta" style="margin-top:8px">Save your embassy page before you fly. Travel insurance that covers scooters only if you hold a valid licence — read the wording.</p>
-        </div>
-      </div>
-
-      <div class="box" style="margin-top:14px">
-        <h3>Vegan phrasebook</h3>
-        <div class="phrase"><b>Thai</b><span>Jay / jeh (เจ) · “mai sai nam pla” no fish sauce · “mangkawirat” vegetarian</span></div>
-        <div class="phrase"><b>Vietnamese</b><span>Chay · “không nước mắm” no fish sauce · “cơm chay” vegan rice plate</span></div>
-        <div class="phrase"><b>Indonesian</b><span>Saya vegan · “tanpa terasi, tanpa ikan” no shrimp paste, no fish · tempe / tahu</span></div>
-        <div class="phrase"><b>Khmer</b><span>“ot banhchhan sat” no animal · watch prahok fish paste</span></div>
-        <div class="phrase"><b>Japanese</b><span>Bejitarian / beegan · “dashi nuki” no fish stock · shōjin ryōri temple food</span></div>
-        <div class="phrase"><b>Korean</b><span>Vegan · “myeolchi / dashida ppaejuseyo” no anchovy stock</span></div>
-        <div class="phrase"><b>Hindi</b><span>Main vegan hoon · “bina ghee, bina dahi, bina paneer, bina shahad”</span></div>
-        <div class="phrase"><b>Georgian</b><span>Vegetarian is easy · “khinkali gushit” dumpling filling — ask potato/mushroom</span></div>
-      </div>
-
-      <div class="box" style="margin-top:14px">
-        <h3>Money, ATMs, water, health</h3>
-        <ul class="clean">
-          <li>Notify your bank. Wise / Revolut usually beat airport desks. Decline DCC (dynamic currency conversion) at ATMs.</li>
-          <li>Thailand/Vietnam/Indonesia: ATMs often add 220 local + your bank fee. Take larger withdrawals.</li>
-          <li>Japan and Korea: IC cards (Suica / T-money) for trains. Cash still useful at tiny shops.</li>
-          <li>Drink bottled or filtered water in most of South and Southeast Asia. Ice is usually machine-made in tourist towns.</li>
-          <li>This is not medical advice. Check your doctor for hepatitis A, typhoid, and Japanese encephalitis if you will be rural for weeks. Carry ORS sachets and a simple first-aid kit.</li>
-          <li>Scooter: licence + helmet. Many policies refuse claims without both.</li>
-          <li>Tap water is generally fine in Singapore, Japan, Korea, Taiwan, and much of Georgia’s cities.</li>
-        </ul>
-      </div>
-    </section>
-  </main>
-
-  <nav class="mobile-nav">
-    <button type="button" data-go="home" onclick="go('home')"><span>🏠</span>Home</button>
-    <button type="button" data-go="explore" onclick="go('explore')"><span>🗺️</span>Map</button>
-    <button type="button" data-go="fly" onclick="go('fly')"><span>🤖</span>Scout</button>
-    <button type="button" data-go="play" onclick="go('play')"><span>🧘</span>Play</button>
-    <button type="button" data-go="plan" onclick="go('plan')"><span>📅</span>Plan</button>
-    <button type="button" data-go="tools" onclick="go('tools')"><span>🧰</span>Tools</button>
-  </nav>
-
-  <footer>
-    <div class="wrap">
-      LotusLane is a planning prototype. Visa rules change. Confirm every requirement on the official government site linked in Visa desk. Not affiliated with any ministry of immigration. Prices are 2026 traveller averages, converted with live FX.
+<section id="plan" class="panel">
+  <h2>Your trip</h2>
+  <div class="box">
+    <div class="form">
+      <div><label>Trip budget</label><input id="tripBudget" type="number" min="0" value="2000"/></div>
+      <div><label>Currency</label><select id="cur"></select></div>
     </div>
-  </footer>
+    <button class="btn" type="button" id="saveBudget">Save budget</button>
+    <div id="remain" class="ok">Set a budget, then add bookings.</div>
+  </div>
+  <div class="box" style="margin-top:12px">
+    <h3>Add a booking</h3>
+    <div class="form">
+      <div><label>Date</label><input id="dDate" type="date"/></div>
+      <div><label>Country</label><select id="dCountry"></select></div>
+      <div><label>Category</label>
+        <select id="dCat">
+          <option value="stay">Accommodation</option>
+          <option value="flight">Flight</option>
+          <option value="moto">Motorcycle rental</option>
+          <option value="travel">Travel</option>
+          <option value="food">Food</option>
+          <option value="see">Attraction</option>
+        </select>
+      </div>
+      <div id="modeWrap"><label>Travel type</label>
+        <select id="dMode"><option value="bus">Bus</option><option value="train">Train</option><option value="taxi">Taxi</option><option value="ferry">Ferry</option></select>
+      </div>
+      <div><label>Place</label><input id="dPlace" placeholder="Bangkok room, VietJet BKK–HAN"/></div>
+      <div><label>Cost</label><input id="dCost" type="number" min="0" step="0.01" value="0"/></div>
+    </div>
+    <button class="btn" type="button" id="addBtn">Add to trip</button>
+    <p class="meta" id="note" style="margin-top:8px">You stay on this page. Add as many rooms and flights as you want.</p>
+  </div>
+  <div id="split" class="grid" style="margin-top:12px"></div>
+  <div id="list"></div>
+  <div id="near" style="margin-top:12px"></div>
+</section>
 
+<section id="map" class="panel">
+  <h2>Countries</h2>
+  <input id="q" placeholder="Search Thailand, Vietnam…" style="margin:8px 0"/>
+  <div id="cards" class="grid"></div>
+  <div id="country" class="box" style="margin-top:12px;display:none"></div>
+</section>
+
+<section id="scout" class="panel">
+  <h2>Scout</h2>
+  <p class="meta">Opens live search. LotusLane does not invent fares.</p>
+  <div class="form">
+    <div><label>From</label><input id="from" value="LON"/></div>
+    <div><label>To</label><input id="to" value="BKK"/></div>
+    <div><label>Date</label><input id="when" type="date"/></div>
+  </div>
+  <div id="scoutLinks"></div>
+</section>
+
+<section id="play" class="panel">
+  <h2>Places</h2>
+  <div class="tabs" id="playTabs"></div>
+  <div id="playOut"></div>
+</section>
+
+<section id="visa" class="panel">
+  <h2>Visa desk</h2>
+  <div id="visaOut"></div>
+</section>
+</main>
+<nav class="bar">
+  <button type="button" data-go="home"><span>🏠</span>Home</button>
+  <button type="button" data-go="plan"><span>📅</span>Trip</button>
+  <button type="button" data-go="map"><span>🗺️</span>Map</button>
+  <button type="button" data-go="scout"><span>✈</span>Scout</button>
+  <button type="button" data-go="play"><span>🏝️</span>Places</button>
+</nav>
 <script>
-document.addEventListener("submit", function (e) { e.preventDefault(); }, true);
-const NATS = [
-  ["US","United States"],["GB","United Kingdom"],["DE","Germany"],["FR","France"],["IT","Italy"],
-  ["ES","Spain"],["NL","Netherlands"],["IE","Ireland"],["SE","Sweden"],["PL","Poland"],
-  ["SK","Slovakia"],["CZ","Czechia"],["AT","Austria"],["HU","Hungary"],
-  ["AU","Australia"],["CA","Canada"],["NZ","New Zealand"],["JP","Japan"],["KR","South Korea"],
-  ["SG","Singapore"],["MY","Malaysia"],["TH","Thailand"],["PH","Philippines"],["ID","Indonesia"],
-  ["VN","Vietnam"],["IN","India"],["CN","China"],["TW","Taiwan"],["HK","Hong Kong"],
-  ["BR","Brazil"],["ZA","South Africa"],["MX","Mexico"],["AE","United Arab Emirates"],["TR","Türkiye"]
+document.addEventListener("submit", e => e.preventDefault(), true);
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const CUR = [["GBP","£","United Kingdom"],["EUR","€","Slovakia / euro"],["USD","$","United States"],["THB","฿","Thailand"],["VND","₫","Vietnam"],["IDR","Rp","Indonesia"],["MYR","RM","Malaysia"],["PHP","₱","Philippines"],["SGD","S$","Singapore"],["INR","₹","India"],["JPY","¥","Japan"],["KRW","₩","Korea"]];
+const CATS = {stay:["Accommodation","#0e8f9a"],flight:["Flight","#1a6b52"],moto:["Motorcycle","#7c4a03"],travel:["Travel","#3b5bdb"],food:["Food","#e09a2b"],see:["Attraction","#e25d72"]};
+const COUNTRIES = [
+  {id:"th",name:"Thailand",flag:"🇹🇭",visa:"30 days visa-exempt for many passports since 15 Sep 2026. Longer: e-visa or DTV.", vegan:"Jay (เจ) stalls, Chiang Mai and Bangkok.", budget:40, links:{apply:"https://www.thaievisa.go.th/",ext:"https://www.immigration.go.th/",card:"https://tdac.immigration.go.th/"}},
+  {id:"vn",name:"Vietnam",flag:"🇻🇳",visa:"90-day e-visa is the simple long option for many, including Slovak.", vegan:"Chay canteens, especially HCMC.", budget:32, links:{apply:"https://evisa.gov.vn/e-visa/foreigners/",ext:"https://evisa.gov.vn/"}},
+  {id:"kh",name:"Cambodia",flag:"🇰🇭",visa:"e-Visa or VOA, then extension at immigration.", vegan:"Siem Reap kitchens, limited outside towns.", budget:30, links:{apply:"https://www.evisa.gov.kh/"}},
+  {id:"la",name:"Laos",flag:"🇱🇦",visa:"e-Visa / VOA.", vegan:"Luang Prabang vegetarian cafés.", budget:28, links:{apply:"https://laoevisa.gov.la/"}},
+  {id:"id",name:"Indonesia",flag:"🇮🇩",visa:"VOA 30 days + 30 at immigration.", vegan:"Ubud and Canggu are easy.", budget:38, links:{apply:"https://evisa.imigrasi.go.id/",ext:"https://www.imigrasi.go.id/"}},
+  {id:"my",name:"Malaysia",flag:"🇲🇾",visa:"90 days visa-free for many.", vegan:"Penang and KL.", budget:42, links:{card:"https://imigresen-online.imi.gov.my/mdac/main",ext:"https://www.imi.gov.my/"}},
+  {id:"sg",name:"Singapore",flag:"🇸🇬",visa:"Short stay, not a budget base.", vegan:"Hawker and certified vegan.", budget:90, links:{apply:"https://www.ica.gov.sg/enter-transit-depart"}},
+  {id:"ph",name:"Philippines",flag:"🇵🇭",visa:"30 days, extend in country.", vegan:"Manila and Cebu cafés.", budget:36, links:{card:"https://etravel.gov.ph/",ext:"https://immigration.gov.ph/faqs/extensionofstay"}},
+  {id:"jp",name:"Japan",flag:"🇯🇵",visa:"90 days visa-free many passports.", vegan:"Tokyo and Kyoto.", budget:85, links:{apply:"https://www.mofa.go.jp/j_info/visit/visa/visaonline.html"}},
+  {id:"kr",name:"South Korea",flag:"🇰🇷",visa:"K-ETA or exemption by passport.", vegan:"Seoul.", budget:70, links:{apply:"https://www.k-eta.go.kr/"}},
+  {id:"tw",name:"Taiwan",flag:"🇹🇼",visa:"90 days for many.", vegan:"Best certified vegan mark in Asia.", budget:55, links:{apply:"https://www.boca.gov.tw/"}},
+  {id:"in",name:"India",flag:"🇮🇳",visa:"e-Visa. Extend via FRRO.", vegan:"Easiest country for plant meals.", budget:25, links:{apply:"https://indianvisaonline.gov.in/evisa/tvoa.html",ext:"https://indianfrro.gov.in/eservices/home.jsp"}},
+  {id:"np",name:"Nepal",flag:"🇳🇵",visa:"VOA 15/30/90.", vegan:"Thamel.", budget:28, links:{apply:"https://www.immigration.gov.np/"}},
+  {id:"lk",name:"Sri Lanka",flag:"🇱🇰",visa:"ETA.", vegan:"Colombo and Ella cafés.", budget:35, links:{apply:"https://www.eta.gov.lk/"}},
+  {id:"ge",name:"Georgia",flag:"🇬🇪",visa:"Up to 365 days visa-free for many.", vegan:"Tbilisi.", budget:40, links:{apply:"https://www.geoconsul.gov.ge/"}}
 ];
-
-const WEST = new Set(["US","GB","DE","FR","IT","ES","NL","IE","SE","PL","SK","CZ","AT","HU","AU","CA","NZ"]);
-const EU = new Set(["DE","FR","IT","ES","NL","IE","SE","PL","SK","CZ","AT","HU"]);
-const VN45 = new Set(["GB","JP","KR","FR","DE","ES","IT","SE","NL","IE","PL","SK","CZ","HU"]);
-
-const PORTALS = [
-  {name:"Vietnam e-Visa (official)", url:"https://evisa.gov.vn/e-visa/foreigners/", kind:"apply"},
-  {name:"Cambodia e-Visa (official)", url:"https://www.evisa.gov.kh/", kind:"apply"},
-  {name:"Lao PDR e-Visa (official)", url:"https://laoevisa.gov.la/", kind:"apply"},
-  {name:"Indonesia e-VOA / Extend My Visa", url:"https://evisa.imigrasi.go.id/", kind:"both"},
-  {name:"Indonesia stay-permit rules (Imigrasi)", url:"https://www.imigrasi.go.id/wna/izin-tinggal-keimigrasian", kind:"extend"},
-  {name:"Thailand e-Visa + DTV", url:"https://www.thaievisa.go.th/", kind:"apply"},
-  {name:"Thailand TDAC arrival card", url:"https://tdac.immigration.go.th/", kind:"apply"},
-  {name:"Thailand Immigration Bureau", url:"https://www.immigration.go.th/", kind:"extend"},
-  {name:"Thailand TM.7 extension form (Bangkok Immigration)", url:"https://bangkok.immigration.go.th/en/downloads_en/", kind:"extend"},
-  {name:"Thailand e-Extension (selected visa types)", url:"https://thaiextension.vfsevisa.com/index.html", kind:"extend"},
-  {name:"Malaysia MDAC arrival card", url:"https://imigresen-online.imi.gov.my/mdac/main", kind:"apply"},
-  {name:"Malaysia Immigration Department", url:"https://www.imi.gov.my/", kind:"extend"},
-  {name:"Philippines eTravel", url:"https://etravel.gov.ph/", kind:"apply"},
-  {name:"Philippines LSVVE long-stay extension", url:"https://immigration.gov.ph/visa-requirements/non-immigrant-visa/temporary-visitor-visa/long-stay-visitor-visa-extension-lsvve", kind:"extend"},
-  {name:"Philippines extension of stay FAQ", url:"https://immigration.gov.ph/faqs/extensionofstay", kind:"extend"},
-  {name:"India e-Visa (official)", url:"https://indianvisaonline.gov.in/evisa/tvoa.html", kind:"apply"},
-  {name:"India FRRO e-services (in-country)", url:"https://indianfrro.gov.in/eservices/home.jsp", kind:"extend"},
-  {name:"Myanmar e-Visa (official)", url:"https://evisa.moip.gov.mm/", kind:"apply"},
-  {name:"China visa COVA", url:"https://cova.mfa.gov.cn/", kind:"apply"},
-  {name:"Japan eVISA (if not exempt)", url:"https://www.mofa.go.jp/j_info/visit/visa/visaonline.html", kind:"apply"},
-  {name:"Taiwan BOCA", url:"https://www.boca.gov.tw/", kind:"apply"},
-  {name:"Sri Lanka ETA", url:"https://www.eta.gov.lk/", kind:"apply"},
-  {name:"Nepal Department of Immigration", url:"https://www.immigration.gov.np/", kind:"both"},
-  {name:"Korea K-ETA", url:"https://www.k-eta.go.kr/", kind:"apply"},
-  {name:"Singapore ICA / arrival", url:"https://www.ica.gov.sg/enter-transit-depart", kind:"apply"},
-  {name:"Mongolia Immigration", url:"https://www.immigration.gov.mn/", kind:"apply"}
-];
-
-const GOV = {
-  th: {
-    apply:[{l:"Thailand e-Visa / DTV",u:"https://www.thaievisa.go.th/"},{l:"TDAC arrival card",u:"https://tdac.immigration.go.th/"}],
-    extend:[{l:"Immigration Bureau",u:"https://www.immigration.go.th/"},{l:"TM.7 form (Bangkok Immigration)",u:"https://bangkok.immigration.go.th/en/downloads_en/"},{l:"e-Extension (selected visas)",u:"https://thaiextension.vfsevisa.com/index.html"}],
-    note:"Visa-exempt stay is 30 days for many passports from 15 Sep 2026. Tourist/exemption extension is usually +30 days on form TM.7, fee 1,900 THB, in person at the local immigration office."
-  },
-  vn: {
-    apply:[{l:"Vietnam National e-Visa",u:"https://evisa.gov.vn/e-visa/foreigners/"}],
-    extend:[{l:"e-Visa portal (new application after exit)",u:"https://evisa.gov.vn/e-visa/foreigners/"}],
-    note:"45-day visa exemption (incl. Slovakia under the tourism stimulus programme to Aug 2028) and the 90-day e-visa are generally not extended online. Embassy tourist visas can be extended in person at Immigration in Hanoi / HCMC / Da Nang. For a longer stay, apply for a 90-day e-visa before travel."
-  },
-  kh: {
-    apply:[{l:"Cambodia e-Visa",u:"https://www.evisa.gov.kh/"}],
-    extend:[{l:"Cambodia e-Visa information",u:"https://www.evisa.gov.kh/"}],
-    note:"Use only evisa.gov.kh. Tourist (T) extensions have been restricted; Ordinary/business (E) class is the in-country extendable route. Confirm on the official site before paying anyone else."
-  },
-  la: {
-    apply:[{l:"Lao official e-Visa",u:"https://laoevisa.gov.la/"}],
-    extend:[{l:"Lao e-Visa / immigration",u:"https://laoevisa.gov.la/"}],
-    note:"Typical stay 30 days. Extensions are handled at immigration in Vientiane and some provincial offices — not a third-party website."
-  },
-  id: {
-    apply:[{l:"Indonesia official e-VOA",u:"https://evisa.imigrasi.go.id/"}],
-    extend:[{l:"Extend My Visa (same official portal)",u:"https://evisa.imigrasi.go.id/"},{l:"Stay-permit rules (Imigrasi)",u:"https://www.imigrasi.go.id/wna/izin-tinggal-keimigrasian"}],
-    note:"VOA / e-VOA: 30 days, extend once for 30 days via evisa.imigrasi.go.id then biometrics at a local Kantor Imigrasi. Fee commonly IDR 500,000. Overstay fines are steep."
-  },
-  my: {
-    apply:[{l:"Malaysia MDAC",u:"https://imigresen-online.imi.gov.my/mdac/main"}],
-    extend:[{l:"Immigration Department of Malaysia",u:"https://www.imi.gov.my/"}],
-    note:"Many passports already get 90 days visa-free. Further stay is an immigration-office matter or a pass such as DE Rantau — start at imi.gov.my."
-  },
-  sg: {
-    apply:[{l:"ICA enter / transit / depart",u:"https://www.ica.gov.sg/enter-transit-depart"}],
-    extend:[{l:"ICA — extend short-term stay",u:"https://www.ica.gov.sg/enter-transit-depart/extend-short-term-stay"}],
-    note:"Visa-free 90 days is common. Short-term extensions, if allowed, go through ICA — not agencies."
-  },
-  ph: {
-    apply:[{l:"Philippines eTravel",u:"https://etravel.gov.ph/"}],
-    extend:[{l:"Long-Stay Visitor Visa Extension (LSVVE)",u:"https://immigration.gov.ph/visa-requirements/non-immigrant-visa/temporary-visitor-visa/long-stay-visitor-visa-extension-lsvve"},{l:"Extension of stay FAQ",u:"https://immigration.gov.ph/faqs/extensionofstay"}],
-    note:"Typical visa-free entry 30 days. Extensions and the 6-month LSVVE are Bureau of Immigration products (main office Intramuros for LSVVE)."
-  },
-  mm: {
-    apply:[{l:"Myanmar official e-Visa",u:"https://evisa.moip.gov.mm/"}],
-    extend:[{l:"Ministry of Immigration e-Visa",u:"https://evisa.moip.gov.mm/"}],
-    note:"Apply only on evisa.moip.gov.mm. Read current travel advisories before planning an extension."
-  },
-  jp: {
-    apply:[{l:"JAPAN eVISA (MOFA)",u:"https://www.mofa.go.jp/j_info/visit/visa/visaonline.html"}],
-    extend:[{l:"Immigration Services Agency",u:"https://www.moj.go.jp/isa/"}],
-    note:"Most Western and EU passports including Slovakia are visa-free 90 days. Tourist extensions are exceptional, not routine."
-  },
-  kr: {
-    apply:[{l:"K-ETA",u:"https://www.k-eta.go.kr/"}],
-    extend:[{l:"HiKorea immigration",u:"https://www.hikorea.go.kr/"}],
-    note:"Visa-free 90 days is common. K-ETA still applies to some passports."
-  },
-  tw: {
-    apply:[{l:"Taiwan BOCA",u:"https://www.boca.gov.tw/"}],
-    extend:[{l:"BOCA / National Immigration Agency",u:"https://www.boca.gov.tw/"}],
-    note:"90-day visa exemption for many EU and Western passports."
-  },
-  hk: {
-    apply:[{l:"HK Immigration Department",u:"https://www.immd.gov.hk/eng/services/visas/visit-transit/visit-visa-entry-permit.html"}],
-    extend:[{l:"IMMD visas & IDs",u:"https://www.immd.gov.hk/eng/services/index.html"}],
-    note:"Visa-free 90 days is typical for EU / UK / US passports."
-  },
-  cn: {
-    apply:[{l:"China visa COVA",u:"https://cova.mfa.gov.cn/"}],
-    extend:[{l:"National Immigration Administration",u:"https://en.nia.gov.cn/"}],
-    note:"Many EU passports (including Slovakia) currently have a time-limited 30-day visa-free pilot through 31 Dec 2026 — confirm before you fly. US passports typically still need a visa."
-  },
-  in: {
-    apply:[{l:"India official e-Visa",u:"https://indianvisaonline.gov.in/evisa/tvoa.html"}],
-    extend:[{l:"FRRO e-services",u:"https://indianfrro.gov.in/eservices/home.jsp"}],
-    note:"Apply only on indianvisaonline.gov.in. In-country changes go through FRRO, not agents advertising on Google."
-  },
-  np: {
-    apply:[{l:"Nepal Department of Immigration",u:"https://www.immigration.gov.np/"}],
-    extend:[{l:"DoI — extend / services",u:"https://www.immigration.gov.np/"}],
-    note:"VOA 15/30/90 days at the airport, or apply via the department site. Trekking permits are separate."
-  },
-  lk: {
-    apply:[{l:"Sri Lanka ETA",u:"https://www.eta.gov.lk/"}],
-    extend:[{l:"Department of Immigration & Emigration",u:"https://www.immigration.gov.lk/"}],
-    note:"Get the ETA before travel on eta.gov.lk only."
-  },
-  mv: {
-    apply:[{l:"Maldives Immigration",u:"https://www.immigration.gov.mv/"}],
-    extend:[{l:"Maldives Immigration",u:"https://www.immigration.gov.mv/"}],
-    note:"Tourist VOA is typically 30 days with an onward ticket."
-  },
-  mn: {
-    apply:[{l:"Mongolia Immigration",u:"https://www.immigration.gov.mn/"}],
-    extend:[{l:"Mongolia Immigration",u:"https://www.immigration.gov.mn/"}],
-    note:"e-Visa or exemption depends on passport — check the government site."
-  }
+const PLACES = {
+  th:{beach:["Railay","Koh Lanta","Koh Lipe","Koh Samui","Mai Khao"],food:["Jay stalls, Chiang Mai","Chatuchak"],nature:["Khao Sok","Doi Inthanon"],see:["Grand Palace","Ayutthaya"],shop:["Chatuchak","Chiang Mai walking street"],bike:["Chiang Mai scooter shops","Phuket hire, IDP often asked"]},
+  vn:{beach:["An Bang","My Khe","Phu Quoc"],food:["Phở chay, Hanoi","District 1 chay"],nature:["Ninh Binh","Ha Giang","Phong Nha"],see:["Hoi An","Hue citadel"],shop:["Ben Thanh","Hoi An tailors"],bike:["Hoi An scooters, local licence rules"]},
+  id:{beach:["Bingin","Gili Air","Kuta Lombok"],food:["Ubud vegan cafés"],nature:["Campuhan","Sekumpul","Komodo"],see:["Ubud","Borobudur"],shop:["Ubud market"],bike:["Ubud / Canggu scooter hire"]},
+  kh:{beach:["Otres","Koh Rong"],food:["Siem Reap vegan kitchens"],nature:["Tonle Sap"],see:["Angkor Wat"],shop:["Psar Chaa"],bike:["Siem Reap scooters"]},
+  jp:{beach:["Okinawa"],food:["Vegan ramen, Tokyo"],nature:["Nikko","Kamakura"],see:["Kyoto temples"],shop:["Don Quijote"],bike:["Not usual in cities"]}
 };
-
-const C = [
-  {id:"th", name:"Thailand", region:"sea", flag:"🇹🇭", vegan:5, cheap:4, long:"DTV digital nomad / education visa (multi-year, 180 days per entry)", color:"linear-gradient(135deg,#0b3d2e,#c9842a)",
-    blurb:"Temples, islands, jay food and the easiest first-timer loop.",
-    budget:35, stayHint:"Many Western passports: 30 days visa-exempt from 15 Sep 2026 (was 60). TDAC required.",
-    cities:["Bangkok","Chiang Mai","Chiang Rai","Pai","Ayutthaya","Krabi","Koh Lanta","Koh Samui"],
-    eats:["Jay restaurants (look for เจ)","Talat Phlu / Ari in BKK","May Kaidee, Broccoli Revolution","Chiang Mai Nimman vegan strip"],
-    stay:["Hostel dorm $6–12","Private guesthouse $15–30"],
-    move:["Scooter $4–10/day","Buses and 12Go night trains","Island catamarans $10–25"],
-    rec:["Chiang Mai 5–8 nights as a vegan base","Rail to south only if you want islands"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Bangkok", stay:"https://www.agoda.com/city/bangkok-th.html", food:"https://www.happycow.net/asia/thailand/", trains:"https://12go.asia/en/travel/bangkok/chiang-mai"}},
-  {id:"vn", name:"Vietnam", region:"sea", flag:"🇻🇳", vegan:5, cheap:5, long:"90-day e-visa (single or multiple) is the practical long stay", color:"linear-gradient(135deg,#7f1d1d,#b91c1c)",
-    blurb:"Best value-for-experience in Asia. Phở chay, trains, karst and coffee.",
-    budget:30, stayHint:"UK, Japan, Korea and many EU: 45 days visa-free (re-entry allowed under current resolution). US and others: e-visa up to 90 days.",
-    cities:["Hanoi","Ninh Binh","Phong Nha","Hue","Hoi An","Da Nang","Da Lat","HCMC"],
-    eats:["Cơm chay halls","Hum Vegetarian, Organica","Vegan banh mi in D1 / D3"],
-    stay:["Dorm $5–10","Private $12–25"],
-    move:["Reunification railway","Grab bike $1–3","Ha Long / Lan Ha day boat"],
-    rec:["North-to-south in 3 weeks","Hoi An for slow vegan days"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Hanoi", stay:"https://www.agoda.com/city/hanoi-vn.html", food:"https://www.happycow.net/asia/vietnam/", trains:"https://www.baolau.com"}},
-  {id:"kh", name:"Cambodia", region:"sea", flag:"🇰🇭", vegan:3, cheap:5, long:"30-day e-visa / VOA; extensions at immigration", color:"linear-gradient(135deg,#1e3a8a,#b45309)",
-    blurb:"Angkor plus riverside towns. Cheap, with one big-ticket temple pass.",
-    budget:28, stayHint:"Almost everyone: e-visa or VOA, 30 days, about $30. Use only evisa.gov.kh.",
-    cities:["Siem Reap","Phnom Penh","Kampot","Kep","Koh Rong"],
-    eats:["Siem Reap vegan cafés","Ask no prahok (fish paste)"],
-    stay:["Dorm $4–8","Private $10–20"],
-    move:["Scooter $5–7","Buses on 12Go"],
-    rec:["3-day Angkor pass, then Kampot pepper farms"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Siem%20Reap", stay:"https://www.agoda.com/city/siem-reap-kh.html", food:"https://www.happycow.net/asia/cambodia/", visa:"https://www.evisa.gov.kh/"}},
-  {id:"la", name:"Laos", region:"sea", flag:"🇱🇦", vegan:3, cheap:5, long:"30-day e-visa / VOA", color:"linear-gradient(135deg,#166534,#65a30d)",
-    blurb:"Slowest, cheapest mainland. Mekong, caves, night railway.",
-    budget:25, stayHint:"e-Visa or VOA ~30 days for most visitors.",
-    cities:["Luang Prabang","Vang Vieng","Vientiane","4000 Islands"],
-    eats:["Temple-adjacent vegetarian","LPB cafés"],
-    stay:["Guesthouse $6–15"],
-    move:["Laos-China railway LPB–VTE $20–40"],
-    rec:["5–7 days is enough unless you go deep south"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Luang%20Prabang", stay:"https://www.agoda.com/city/luang-prabang-la.html", food:"https://www.happycow.net/asia/laos/", visa:"https://laoevisa.gov.la/"}},
-  {id:"id", name:"Indonesia", region:"sea", flag:"🇮🇩", vegan:4, cheap:4, long:"VOA 30 + 30-day extension at immigration; long-stay options exist", color:"linear-gradient(135deg,#9f1239,#f59e0b)",
-    blurb:"Tempeh homeland. Bali wellness + volcanoes, Java culture, Komodo boats.",
-    budget:35, stayHint:"Most Western + many others: Visa on Arrival / e-VOA 30 days, extendable once. ASEAN often exempt.",
-    cities:["Ubud","Canggu","Yogyakarta","Lombok","Gili","Flores","Jakarta"],
-    eats:["Tempeh every warung","Ubud vegan cafés","Ask no terasi"],
-    stay:["Dorm $6–12","Room $15–40 (Bali higher)"],
-    move:["Scooter $4–11","Fast boat Bali–Gili $25–55","Public Padang Bai–Lombok ~$4"],
-    rec:["Ubud base 1 week then Lombok if you want quieter"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Denpasar", stay:"https://www.agoda.com/city/bali-id.html", food:"https://www.happycow.net/asia/indonesia/", visa:"https://evisa.imigrasi.go.id/"}},
-  {id:"my", name:"Malaysia", region:"sea", flag:"🇲🇾", vegan:4, cheap:3, long:"90 days visa-free for many; DE Rantau nomad pass", color:"linear-gradient(135deg,#0f172a,#b91c1c)",
-    blurb:"Food capital. Penang, islands, Borneo wildlife. Long visa-free window.",
-    budget:40, stayHint:"US/UK/EU/AU/CA typically 90 days visa-free. Complete MDAC before flying.",
-    cities:["Kuala Lumpur","George Town","Langkawi","Cameron Highlands","Kota Kinabalu"],
-    eats:["Little India thalis without ghee","Penang vegan streets","Buddhist Chinese restaurants"],
-    stay:["Dorm $8–15","Hotel $20–40"],
-    move:["Grab","ETS trains","ferries to islands"],
-    rec:"Great 90-day single-country stay if you want fewer borders.",
-    rec:["Penang 4 nights for food","Borneo if budget allows flights"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Kuala%20Lumpur", stay:"https://www.agoda.com/city/kuala-lumpur-my.html", food:"https://www.happycow.net/asia/malaysia/", arrive:"https://imigresen-online.imi.gov.my/mdac/main"}},
-  {id:"sg", name:"Singapore", region:"sea", flag:"🇸🇬", vegan:4, cheap:1, long:"90 days for many; not a budget base", color:"linear-gradient(135deg,#155e75,#0f172a)",
-    blurb:"Hawker vegan stalls, transit hub, 2–4 day treat.",
-    budget:100, stayHint:"Visa-free 90 days for many strong passports. SG Arrival Card.",
-    cities:["Singapore"],
-    eats:["Hawker vegetarian stalls","Little India","The Living Café"],
-    stay:["Hostel $25–45","Hotel $90+"],
-    move:["MRT"],
-    rec:["Use as a flight hub, not a month-long base"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Singapore", stay:"https://www.agoda.com/city/singapore-sg.html", food:"https://www.happycow.net/asia/singapore/"}},
-  {id:"ph", name:"Philippines", region:"sea", flag:"🇵🇭", vegan:3, cheap:3, long:"30 days visa-free for many, extendable in-country", color:"linear-gradient(135deg,#1d4ed8,#facc15)",
-    blurb:"Ferries, limestone cliffs, surf. Vegan scene thinner outside Manila/Cebu/Siargao.",
-    budget:42, stayHint:"Many passports 30 days visa-free. File eTravel. Extensions at immigration.",
-    cities:["Manila","Cebu","El Nido","Coron","Siargao","Bohol","Siquijor"],
-    eats:["Manila vegan cafés","Ask no patis (fish sauce)","Indian restaurants as backup"],
-    stay:["Dorm $8–15","Fan room $12–25"],
-    move:["Scooter $6–10","Cebu–Bohol ferry ~$16","Coron–El Nido ~$55"],
-    rec:["Pick one island cluster to avoid flight bleed"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Manila", stay:"https://www.agoda.com/city/cebu-ph.html", food:"https://www.happycow.net/asia/philippines/", arrive:"https://etravel.gov.ph/"}},
-  {id:"mm", name:"Myanmar", region:"sea", flag:"🇲🇲", vegan:3, cheap:4, long:"e-Visa tourist, check advisories first", color:"linear-gradient(135deg,#365314,#facc15)",
-    blurb:"Extraordinary temples. Travel conditions and access change — read current advisories.",
-    budget:32, stayHint:"e-Visa required for most. Confirm open airports and insurance.",
-    cities:["Yangon","Bagan","Mandalay","Inle"],
-    eats:["Tea-leaf salad without shrimp","Monastery food"],
-    stay:["Guesthouse $10–25"],
-    move:["Domestic flights often safer than long roads"],
-    rec:["Only go if your government advisory and insurance allow"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Yangon", stay:"https://www.agoda.com/city/yangon-mm.html", food:"https://www.happycow.net/asia/myanmar/", visa:"https://evisa.moip.gov.mm/"}},
-  {id:"bn", name:"Brunei", region:"sea", flag:"🇧🇳", vegan:2, cheap:2, long:"Visa-exempt short stay for many", color:"linear-gradient(135deg,#14532d,#facc15)",
-    blurb:"Rainforest and mosques. A 2–3 day stop between Sabah and Sarawak.",
-    budget:55, stayHint:"Visa exemption commonly 14–90 days depending on passport.",
-    cities:["Bandar Seri Begawan"],
-    eats:["Limited but Indian / Chinese vegetarian"],
-    stay:["Hotel $40–80"],
-    move:["Taxis / rental car"],
-    rec:["Ulu Temburong day trip"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Brunei", stay:"https://www.agoda.com/city/bandar-seri-begawan-bn.html", food:"https://www.happycow.net/asia/brunei/"}},
-  {id:"tl", name:"Timor-Leste", region:"sea", flag:"🇹🇱", vegan:2, cheap:3, long:"VOA 30 days typical", color:"linear-gradient(135deg,#9f1239,#1d4ed8)",
-    blurb:"Empty reefs, Portuguese traces, off-grid backpacking.",
-    budget:40, stayHint:"Visa on arrival 30 days for many nationalities.",
-    cities:["Dili","Atauro","Baucau"],
-    eats:["Simple; stock snacks","Portuguese bakeries"],
-    stay:["Guesthouse $15–35"],
-    move:["Microlets, ferries to Atauro"],
-    rec:["Atauro Island for diving"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Dili", stay:"https://www.booking.com/city/tl/dili.html", food:"https://www.happycow.net/asia/east-timor/"}},
-  {id:"jp", name:"Japan", region:"east", flag:"🇯🇵", vegan:4, cheap:1, long:"90 days visa-free for many; specified visa for remote work 6 months", color:"linear-gradient(135deg,#111827,#be123c)",
-    blurb:"Precision transit, onsen, vegan ramen boom in Tokyo/Kyoto.",
-    budget:85, stayHint:"US/UK/EU/AU/CA typically 90 days visa-free. Others may use JAPAN eVISA.",
-    cities:["Tokyo","Kyoto","Osaka","Kanazawa","Fukuoka","Naha"],
-    eats:["Ain Soph, T's Tantan","Shōjin ryōri","Convenience onigiri with umeboshi"],
-    stay:["Capsule $25–40","Business hotel $50–90"],
-    move:["IC cards, shinkansen","Rare scooter use"],
-    rec:["7–12 days city pair, not a $25 backpack country"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Tokyo", stay:"https://www.agoda.com/city/tokyo-jp.html", food:"https://www.happycow.net/asia/japan/"}},
-  {id:"kr", name:"South Korea", region:"east", flag:"🇰🇷", vegan:3, cheap:2, long:"90 days visa-free many; F-1-D workation visa", color:"linear-gradient(135deg,#1e3a8a,#e11d48)",
-    blurb:"Seoul nights, temple stays, growing vegan kitchens.",
-    budget:70, stayHint:"Visa-free 90 days common. Some nationalities need K-ETA.",
-    cities:["Seoul","Busan","Jeju","Gyeongju"],
-    eats:["Plant-based K-food cafés","Watch fish stock in stews"],
-    stay:["K-guesthouse $20–40"],
-    move:["KORAIL, T-money"],
-    rec:["Seoul 5 nights + day trip"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Seoul", stay:"https://www.agoda.com/city/seoul-kr.html", food:"https://www.happycow.net/asia/south-korea/"}},
-  {id:"tw", name:"Taiwan", region:"east", flag:"🇹🇼", vegan:5, cheap:2, long:"90 days visa-free for many Western passports", color:"linear-gradient(135deg,#1d4ed8,#0ea5e9)",
-    blurb:"Asia’s vegan density champion. Night markets, mountains, trains.",
-    budget:60, stayHint:"Visa-exempt 90 days for US/UK/EU/AU/JP/KR and others.",
-    cities:["Taipei","Taichung","Tainan","Hualien","Kaohsiung"],
-    eats:["Look for official vegan logo","Da'an district","Night-market tofu and rice"],
-    stay:["Hotel $35–70"],
-    move:["THSR, EasyCard"],
-    rec:["Best East-Asia vegan month if visa-free"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Taipei", stay:"https://www.agoda.com/city/taipei-tw.html", food:"https://www.happycow.net/asia/taiwan/"}},
-  {id:"hk", name:"Hong Kong", region:"east", flag:"🇭🇰", vegan:4, cheap:1, long:"90 days visa-free many", color:"linear-gradient(135deg,#7f1d1d,#111827)",
-    blurb:"Transit jewel. Dense vegan scene, hiking islands.",
-    budget:90, stayHint:"Visa-free 90 days typical for strong passports.",
-    cities:["Hong Kong","Lantau","Cheung Chau"],
-    eats:["Buddhist mock-meat houses","Central / Sheung Wan cafés"],
-    stay:["Hostel $25–45"],
-    move:["Octopus + ferries"],
-    rec:["3–5 days between flights"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Hong%20Kong", stay:"https://www.agoda.com/city/hong-kong-hk.html", food:"https://www.happycow.net/asia/china/hong_kong/"}},
-  {id:"cn", name:"China", region:"east", flag:"🇨🇳", vegan:3, cheap:3, long:"30-day visa-free pilot for many EU/UK/AU/etc into late 2026; US usually still needs a visa", color:"linear-gradient(135deg,#b91c1c,#facc15)",
-    blurb:"High-speed rail empire. Buddhist restaurants in big cities.",
-    budget:55, stayHint:"Policy is nationality-specific and time-limited. Check consulate. 144/240-hour transit also exists.",
-    cities:["Shanghai","Beijing","Chengdu","Guilin","Xi'an","Shenzhen"],
-    eats:["Buddhist vegetarian halls","Watch oyster sauce"],
-    stay:["Hotel $25–60"],
-    move:["12306 rail"],
-    rec:["Pair two cities on HSR"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Shanghai", stay:"https://www.trip.com", food:"https://www.happycow.net/asia/china/", visa:"https://cova.mfa.gov.cn/"}},
-  {id:"mn", name:"Mongolia", region:"east", flag:"🇲🇳", vegan:2, cheap:4, long:"e-Visa or exemption by nationality", color:"linear-gradient(135deg,#1d4ed8,#dc2626)",
-    blurb:"Steppe, ger camps, huge skies. Bring protein snacks.",
-    budget:40, stayHint:"Many can e-Visa; some visa-free. Meat-heavy cuisine.",
-    cities:["Ulaanbaatar","Terelj","Khovsgol"],
-    eats:["UB vegan cafés only","Markets for fruit/nuts"],
-    stay:["Hostel $8–15","Ger $20–40"],
-    move:["Shared 4x4 tours"],
-    rec:["Summer only for most first-timers"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Ulaanbaatar", stay:"https://www.booking.com/city/mn/ulaanbaatar.html", food:"https://www.happycow.net/asia/mongolia/"}},
-  {id:"in", name:"India", region:"south", flag:"🇮🇳", vegan:5, cheap:5, long:"e-Visa 30 days or longer categories; some 1-year options", color:"linear-gradient(135deg,#c2410c,#16a34a)",
-    blurb:"Vegetarian civilisation. Learn the ghee/paneer script and you eat everywhere.",
-    budget:28, stayHint:"e-Visa for most tourists. Apply only on indianvisaonline.gov.in.",
-    cities:["Bengaluru","Rishikesh","Kerala","Mumbai","Jaipur","Varanasi","Goa","Dharamshala"],
-    eats:["Sattvic / Jain thali","Masala dosa no ghee","Rishikesh cafés"],
-    stay:["Guesthouse $8–20"],
-    move:["IRCTC trains","local metro"],
-    rec:["South or Himalaya — don’t try to see it all"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Bengaluru", stay:"https://www.agoda.com/city/bangalore-in.html", food:"https://www.happycow.net/asia/india/", visa:"https://indianvisaonline.gov.in/evisa/tvoa.html"}},
-  {id:"np", name:"Nepal", region:"south", flag:"🇳🇵", vegan:4, cheap:5, long:"VOA 15/30/90 days; trekking permits extra", color:"linear-gradient(135deg,#0f172a,#dc2626)",
-    blurb:"Dal bhat power. Mountains and monastery kitchens.",
-    budget:30, stayHint:"Visa on arrival or online. Fees by duration.",
-    cities:["Kathmandu","Pokhara","Nagarkot","Chitwan"],
-    eats:["Dal bhat veg","Thamel vegan bakeries"],
-    stay:["Lodge $5–15"],
-    move:["Tourist buses, domestic flights to Lukla"],
-    rec:["Pokhara lakeside 4 nights after a trek"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Kathmandu", stay:"https://www.agoda.com/city/kathmandu-np.html", food:"https://www.happycow.net/asia/nepal/"}},
-  {id:"lk", name:"Sri Lanka", region:"south", flag:"🇱🇰", vegan:4, cheap:4, long:"ETA / e-visa short stay", color:"linear-gradient(135deg,#b45309,#166534)",
-    blurb:"Hoppers, trains through tea, south-coast surf.",
-    budget:38, stayHint:"ETA required for most. Check eta.gov.lk.",
-    cities:["Colombo","Kandy","Ella","Galle","Mirissa","Jaffna"],
-    eats:["Hopper houses, jackfruit curry","Ask no fish mallum"],
-    stay:["Guesthouse $12–25"],
-    move:["Hill-country train","tuk-tuks"],
-    rec:["Cultural triangle + south coast 2 weeks"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Colombo", stay:"https://www.agoda.com/city/colombo-lk.html", food:"https://www.happycow.net/asia/sri_lanka/", visa:"https://www.eta.gov.lk/"}},
-  {id:"mv", name:"Maldives", region:"south", flag:"🇲🇻", vegan:2, cheap:1, long:"VOA 30 days free for tourism", color:"linear-gradient(135deg,#0e7490,#115e59)",
-    blurb:"Water villas or local islands. Vegan fine on resorts; thinner on some local islands.",
-    budget:120, stayHint:"Visa on arrival 30 days for tourists with onward ticket.",
-    cities:["Malé","Maafushi","resort atolls"],
-    eats:["Resort kitchens can do vegan","Local islands: Indian cafés"],
-    stay:["Local island $40–80","Resort $250+"],
-    move:["Speedboats and seaplanes"],
-    rec:["Pick one local island to keep budget sane"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Male", stay:"https://www.agoda.com/city/maldives-mv.html", food:"https://www.happycow.net/asia/maldives/"}},
-  {id:"bt", name:"Bhutan", region:"south", flag:"🇧🇹", vegan:3, cheap:1, long:"Sustainable Development Fee + visa process", color:"linear-gradient(135deg,#facc15,#ea580c)",
-    blurb:"Controlled, spectacular, not backpacker-cheap because of SDF.",
-    budget:150, stayHint:"Visa via licensed operator or official portal plus daily SDF.",
-    cities:["Paro","Thimphu","Punakha"],
-    eats:["Ema datshi without cheese is possible with notice"],
-    stay:["Farmstay / hotel bundled"],
-    move:["Driver included in most tours"],
-    rec:["Go only if the SDF budget is acceptable"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Paro", stay:"https://www.booking.com/country/bt.html", food:"https://www.happycow.net/asia/bhutan/"}},
-  {id:"bd", name:"Bangladesh", region:"south", flag:"🇧🇩", vegan:3, cheap:5, long:"Visa often required", color:"linear-gradient(135deg,#14532d,#dc2626)",
-    blurb:"River life and dense cities. Few tourists, low prices.",
-    budget:25, stayHint:"Many passports need a visa in advance.",
-    cities:["Dhaka","Sylhet","Chittagong","Sundarbans"],
-    eats:["Hindu kitchens, lentil + rice"],
-    stay:["Hotel $15–30"],
-    move:["CNG, launches"],
-    rec:["For curious travellers, not first Asia trip"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Dhaka", stay:"https://www.agoda.com/city/dhaka-bd.html", food:"https://www.happycow.net/asia/bangladesh/"}},
-  {id:"ge", name:"Georgia", region:"cauc", flag:"🇬🇪", vegan:3, cheap:4, long:"365 days visa-free for many passports", color:"linear-gradient(135deg,#9f1239,#fff)",
-    blurb:"Wine hills and the longest easy stay in the wider region.",
-    budget:35, stayHint:"US/UK/EU/AU/many: 1 year visa-free.",
-    cities:["Tbilisi","Kazbegi","Kakheti","Batumi"],
-    eats:["Badrijani, pkhali, mushroom khinkali","Tbilisi vegan cafés"],
-    stay:["Old town guesthouse $15–30"],
-    move:["Marshrutka, marshalled drivers"],
-    rec:["Winter or harvest season"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Tbilisi", stay:"https://www.booking.com/city/ge/t-bilisi.html", food:"https://www.happycow.net/europe/georgia/"}},
-  {id:"kz", name:"Kazakhstan", region:"cauc", flag:"🇰🇿", vegan:2, cheap:4, long:"30 days visa-free many", color:"linear-gradient(135deg,#0369a1,#facc15)",
-    blurb:"Almaty mountains and a modern steppe capital.",
-    budget:40, stayHint:"30-day visa-free for a long list of passports.",
-    cities:["Almaty","Astana","Shymkent"],
-    eats:["Almaty vegan cafés growing"],
-    stay:["Hotel $25–50"],
-    move:["Metro, mountains taxis"],
-    rec:["Almaty + Big Almaty Lake"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Almaty", stay:"https://www.booking.com/city/kz/almaty.html", food:"https://www.happycow.net/asia/kazakhstan/"}},
-  {id:"uz", name:"Uzbekistan", region:"cauc", flag:"🇺🇿", vegan:2, cheap:5, long:"30 days visa-free many / e-visa others", color:"linear-gradient(135deg,#1d4ed8,#22c55e)",
-    blurb:"Silk Road cities on a shoestring.",
-    budget:30, stayHint:"Visa-free 30 days for many; e-visa fallback.",
-    cities:["Tashkent","Samarkand","Bukhara","Khiva"],
-    eats:["Non bread, salads, fruit markets","Limited dedicated vegan"],
-    stay:["B&B $12–25"],
-    move:["Afrosiyob train"],
-    rec:["Classic 10-day four-city rail"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Tashkent", stay:"https://www.booking.com/city/uz/tashkent.html", food:"https://www.happycow.net/asia/uzbekistan/"}},
-  {id:"kg", name:"Kyrgyzstan", region:"cauc", flag:"🇰🇬", vegan:2, cheap:5, long:"60 days visa-free many", color:"linear-gradient(135deg,#be123c,#facc15)",
-    blurb:"Alpine lakes and yurt stays.",
-    budget:28, stayHint:"Visa-free 60 days for many Western passports.",
-    cities:["Bishkek","Karakol","Osh","Song-Kul"],
-    eats:["Bishkek cafés","Bring extras to yurt camps"],
-    stay:["Hostel $6–12"],
-    move:["Shared taxis, treks"],
-    rec:["Summer alpine loop"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Bishkek", stay:"https://www.booking.com/city/kg/bishkek.html", food:"https://www.happycow.net/asia/kyrgyzstan/"}},
-  {id:"am", name:"Armenia", region:"cauc", flag:"🇦🇲", vegan:3, cheap:4, long:"180 days visa-free many", color:"linear-gradient(135deg,#ea580c,#1d4ed8)",
-    blurb:"Monasteries, lavash, Yerevan cafés.",
-    budget:32, stayHint:"Visa-free 180 days for many.",
-    cities:["Yerevan","Dilijan","Lake Sevan","Gyumri"],
-    eats:["Yerevan vegan scene","Lavash + herbs"],
-    stay:["Airbnb-style $15–30"],
-    move:["Marshrutka"],
-    rec:["Combine with Georgia overland"],
-    links:{flights:"https://www.google.com/travel/flights?q=flights%20to%20Yerevan", stay:"https://www.booking.com/city/am/yerevan.html", food:"https://www.happycow.net/europe/armenia/"}}
-];
-
-const HUBS = [
-  ["LON","London (all)"],["LHR","London Heathrow"],["LGW","London Gatwick"],["MAN","Manchester"],
-  ["BKK","Bangkok"],["CNX","Chiang Mai"],["HKT","Phuket"],
-  ["HAN","Hanoi"],["SGN","Ho Chi Minh City"],["DAD","Da Nang"],
-  ["REP","Siem Reap"],["PNH","Phnom Penh"],["VTE","Vientiane"],["LPQ","Luang Prabang"],
-  ["DPS","Bali / Denpasar"],["CGK","Jakarta"],["KUL","Kuala Lumpur"],["PEN","Penang"],["SIN","Singapore"],
-  ["MNL","Manila"],["CEB","Cebu"],
-  ["NRT","Tokyo Narita"],["HND","Tokyo Haneda"],["KIX","Osaka"],["ICN","Seoul"],["TPE","Taipei"],["HKG","Hong Kong"],
-  ["DEL","Delhi"],["BLR","Bengaluru"],["BOM","Mumbai"],["KTM","Kathmandu"],["CMB","Colombo"],["MLE","Malé"],
-  ["TBS","Tbilisi"],["ALA","Almaty"],["TAS","Tashkent"]
-];
-
-const HOPS = [
-  {from:"BKK",to:"HAN",lo:45,hi:90,air:"VietJet / AirAsia",hrs:"1h40"},
-  {from:"BKK",to:"SGN",lo:40,hi:85,air:"VietJet / AirAsia",hrs:"1h30"},
-  {from:"BKK",to:"REP",lo:35,hi:80,air:"AirAsia / Bangkok Airways",hrs:"1h00"},
-  {from:"BKK",to:"KUL",lo:40,hi:80,air:"AirAsia",hrs:"2h00"},
-  {from:"BKK",to:"SIN",lo:50,hi:100,air:"Scoot / AirAsia",hrs:"2h15"},
-  {from:"BKK",to:"DPS",lo:55,hi:120,air:"AirAsia / Thai Lion",hrs:"4h00"},
-  {from:"SGN",to:"MNL",lo:68,hi:110,air:"Cebu Pacific / VietJet",hrs:"2h30"},
-  {from:"HAN",to:"DAD",lo:30,hi:60,air:"VietJet / Bamboo",hrs:"1h15"},
-  {from:"KUL",to:"BKK",lo:40,hi:80,air:"AirAsia",hrs:"2h00"},
-  {from:"SIN",to:"DPS",lo:50,hi:110,air:"AirAsia / Scoot",hrs:"2h40"},
-  {from:"SIN",to:"KUL",lo:25,hi:55,air:"AirAsia",hrs:"1h05"},
-  {from:"MNL",to:"CEB",lo:35,hi:70,air:"Cebu Pacific",hrs:"1h20"},
-  {from:"LON",to:"BKK",lo:380,hi:650,air:"Sale long-haul / one-stop Gulf or IST",hrs:"11–14h"},
-  {from:"LON",to:"SGN",lo:400,hi:700,air:"VietJet via / full service",hrs:"12–16h"}
-];
-
-const SIGHTS = {
-  th: {see:["Grand Palace & Wat Pho, Bangkok","Old City temples, Chiang Mai","Ayutthaya ruins day trip","Railay / Tonsai limestone, Krabi","Doi Inthanon summit"], mkt:["Chatuchak Weekend Market","Or Tor Kor","Chiang Mai Night Bazaar & Saturday Walking Street","Train Night Market Ratchada","Talad Rot Fai"]},
-  vn: {see:["Old Quarter + Temple of Literature, Hanoi","Ninh Binh / Tam Coc boats","Hoi An Ancient Town lanterns","Phong Nha caves","Cu Chi + Independence Palace, HCMC"], mkt:["Đồng Xuân, Hanoi","Bến Thành, HCMC","Hội An night market","Đà Lạt night market"]},
-  kh: {see:["Angkor Wat sunrise, Bayon, Ta Prohm","Tonlé Sap floating villages","Royal Palace, Phnom Penh","Kampot riverside + pepper farms"], mkt:["Psar Chaa Old Market, Siem Reap","Central Market Phnom Penh","Kampot night market"]},
-  la: {see:["Luang Prabang peninsula + Kuang Si falls","Night alms-giving (watch, don’t disrupt)","Vang Vieng karst","4000 Islands Mekong"], mkt:["LPB night market","Vientiane Talat Sao"]},
-  id: {see:["Tegalalang rice, Ubud","Prambanan & Borobudur, Java","Tegallalang / Campuhan ridge","Komodo / Padar boat","Mount Batur sunrise"], mkt:["Ubud Art Market","Gianyar night market","Yogyakarta Beringharjo"]},
-  my: {see:["Batu Caves","George Town street art, Penang","Cameron Highlands tea","Sepilok orangutans"], mkt:["Jalan Alor, KL","Penang Chowrasta & night hawker streets","Central Market KL"]},
-  sg: {see:["Gardens by the Bay","Chinatown + Sri Mariamman","Sentosa / Fort Siloso","Hawker centres as the attraction"], mkt:["Tekka Centre","Chinatown Complex","Geylang Serai"]},
-  ph: {see:["El Nido / Coron lagoons","Chocolate Hills, Bohol","Siargao Cloud 9","Intramuros, Manila"], mkt:["Palengke wet markets","Salcedo Weekend Market","Carbon Market Cebu"]},
-  mm: {see:["Shwedagon Pagoda","Bagan temples at sunrise","Inle Lake stilt villages"], mkt:["Bogyoke Aung San Market","Nyaung U market"]},
-  jp: {see:["Fushimi Inari, Kyoto","Asakusa + teamLab, Tokyo","Nara park","Naoshima art island"], mkt:["Nishiki Market, Kyoto","Kuromon, Osaka","Toyosu (not old Tsukiji inner)","Ameya-Yokocho"]},
-  kr: {see:["Gyeongbokgung + Bukchon","Busan beaches + Gamcheon","Jeju volcanic coast"], mkt:["Gwangjang Market","Namdaemun","Noryangjin"]},
-  tw: {see:["Taroko Gorge","Tainan temples","Jiufen old street","Alishan sunrise"], mkt:["Shilin Night Market","Raohe","Tainan Garden Night Market"]},
-  hk: {see:["Victoria Peak / Star Ferry","Lantau Big Buddha","PMQ / Sheung Wan lanes"], mkt:["Temple Street","Ladies Market","Graham Street"]},
-  cn: {see:["The Bund + Yu Garden","Forbidden City","Li River, Guilin","Chengdu pandas"], mkt:["Muslim Quarter Xi'an","Kuanzhai Xiangzi Chengdu"]},
-  in: {see:["Hampi / Mysore from Bengaluru","Kerala backwaters","Rishikesh Ganga aarti","Amber Fort Jaipur"], mkt:["KR Market Bengaluru","Crawford Market Mumbai","Johari Bazaar Jaipur","Chandni Chowk"]},
-  np: {see:["Swayambhunath + Boudhanath","Pokhara lakeside + Sarangkot","Bhaktapur square"], mkt:["Asan Bazaar","Pokhara lakeside stalls"]},
-  lk: {see:["Sigiriya rock","Kandy Temple of the Tooth","Galle Fort","Ella Nine Arches"], mkt:["Pettah, Colombo","Kandy market"]},
-  mv: {see:["House reef snorkel on a local island","Malé Friday Mosque","Sandbank picnic"], mkt:["Malé local market","fish market dawn"]},
-  ge: {see:["Old Tbilisi sulfur baths","Kazbegi / Gergeti","Kakheti wine villages"], mkt:["Dezerter Bazaar","Dry Bridge flea market"]},
-  kz: {see:["Big Almaty Lake","Kok-Tobe","Charyn Canyon"], mkt:["Green Bazaar Almaty","Zelyonyi"]},
-  uz: {see:["Registan, Samarkand","Bukhara old town","Khiva Ichan-Kala"], mkt:["Siyob Bazaar","Chorsu Tashkent"]},
-  kg: {see:["Song-Kul yurts","Karakol & Altyn Arashan","Osh bazaar"], mkt:["Osh Bazaar Bishkek","Dordoi (wholesale)"]},
-  am: {see:["Cascade + Genocide Museum","Geghard + Garni","Lake Sevan"], mkt:["GUM Market Yerevan"]},
-  bn: {see:["Omar Ali Saifuddien Mosque","Ulu Temburong canopy"], mkt:["Gadong night market"]},
-  tl: {see:["Cristo Rei","Atauro reefs","Jaco Island"], mkt:["Dili beachside stalls"]},
-  bt: {see:["Tiger’s Nest, Paro","Punakha Dzong"], mkt:["Centenary Farmers’ Market Thimphu"]},
-  bd: {see:["Sundarbans","Old Dhaka river","Sylhet tea"], mkt:["New Market Dhaka","Sadarghat"]},
-  mn: {see:["Terelj National Park","Gandan monastery","Khovsgol in summer"], mkt:["Narantuul (Black Market)"]}
-};
-
-const RIDE = {
-  th: {taxi:"Grab + Bolt in cities. Airport rail link in BKK.", train:"Bangkok–Chiang Mai night train on 12Go. BTS/MRT in BKK.", bus:"Orange intercity buses; 12Go for tourist buses.", app:"Grab"},
-  vn: {taxi:"Grab bike is the default. Avoid unmarked taxis.", train:"Reunification line Hanoi–HCMC on Baolau / 12Go.", bus:"Sleeper buses everywhere; book 12Go.", app:"Grab"},
-  kh: {taxi:"PassApp / Grab in PP and Siem Reap. Tuk-tuks for temples.", train:"Limited. Airport–city is tuk-tuk or Grab.", bus:"Giant Ibis / 12Go PP–Siem Reap.", app:"Grab / PassApp"},
-  la: {taxi:"Tuk-tuk; agree fare first.", train:"Laos–China railway LPB–VTE. Book official / 12Go.", bus:"Minivans on 12Go.", app:"Loca in VTE"},
-  id: {taxi:"Grab + Gojek. Never unmetered airport touts.", train:"KAI Java (Jakarta–Yogya). Islands need flights/ferries.", bus:"Travel minibuses; 12Go.", app:"Grab / Gojek"},
-  my: {taxi:"Grab nationwide.", train:"ETS KL–Ipoh–Penang direction. KTM.", bus:"Excellent intercity coaches on 12Go.", app:"Grab"},
-  sg: {taxi:"Grab / Gojek. MRT is cheaper.", train:"MRT + Johor shuttle.", bus:"EZ-Link buses.", app:"Grab"},
-  ph: {taxi:"Grab in Manila/Cebu. Jeepneys cheap, confusing.", train:"Almost none between islands.", bus:"Ceres provincial; ferries matter more.", app:"Grab"},
-  jp: {taxi:"Expensive. Use IC card + trains.", train:"JR Pass only if it beats point-to-point. SmartEX / Navi.", bus:"Willer night buses.", app:"Japan Transit / Suica"},
-  kr: {taxi:"Kakao T. Subway is enough in Seoul.", train:"KORAIL KTX.", bus:"Express buses from Gangnam.", app:"Kakao T"},
-  tw: {taxi:"Uber + meter taxis. MRT Taipei.", train:"THSR for the west coast. TRA scenic east.", bus:"Cheap coaches.", app:"Uber / 55688"},
-  hk: {taxi:"Red taxis + MTR + Star Ferry.", train:"MTR to the border.", bus:"Octopus buses to beaches.", app:"MTR Mobile"},
-  in: {taxi:"Uber / Ola. Auto-rickshaw with meter or app.", train:"IRCTC only for official tickets.", bus:"RedBus / official state RTC.", app:"Uber / Ola"},
-  np: {taxi:"Pre-agree or Pathao.", train:"None useful.", bus:"Tourist buses KTM–Pokhara.", app:"Pathao"},
-  lk: {taxi:"PickMe / Uber in Colombo.", train:"Hill-country Kandy–Ella (book early).", bus:"Cheap, slow.", app:"PickMe"},
-  ge: {taxi:"Bolt / Yandex Go.", train:"Tbilisi–Batumi railway.", bus:"Marshrutka.", app:"Bolt"},
-  id_fallback: {}
-};
-
-const PLAY = {
-  th: {
-    beach:["Railay / Tonsai, Krabi","Phra Nang cave beach","Koh Lanta (Klong Dao, Long Beach, Kantiang)","Koh Muk Emerald Cave","Koh Ngai","Koh Kradan","Koh Lipe Sunrise / Pattaya Beach","Koh Samui Chaweng / Lamai / Maenam","Koh Phangan Than Sadet / Bottle Beach / west coast","Koh Tao Sairee","Mai Khao + Nai Yang, Phuket","Kata / Karon","Freedom Beach","Ao Nang + Railay walk","Hua Hin / Cha-Am","Koh Chang White Sand","Koh Mak","Koh Samet","Similan islands (seasonal)"],
-    nature:["Doi Inthanon summit + Kew Mae Pan","Doi Suthep forest","Khao Sok lake + jungle","Erawan Falls","Kuang… wait Thailand: Umphang","Khao Yai NP","Phi Phi viewpoint","Hong Islands kayak"],
-    spa:["Wat Pho traditional massage school, Bangkok","Chiang Mai herbal compress spas $12–25","Oasis / Let's Relax chains","Koh Lanta beachfront massage"],
-    dive:["Similan / Surin (Nov–Apr)","Koh Tao beginner wrecks & reefs","Hin Daeng / Hin Muang from Lanta"],
-    music:["BAM BAM / Smalls, Bangkok","North Gate Jazz Co-op, Chiang Mai","Full Moon / other island parties — loud, not jazz"],
-    shop:["Chatuchak Weekend Market","MBK + Siam for cheap kit","Saturday Walking Street, Chiang Mai","Night markets for linen and soap"],
-    stay:["Hostel dorm $6–12","Guesthouse fan $12–20","AC boutique $25–45","Beach bungalow $18–40","Resort $80+"],
-    yoga:["Yoga studio belt in Nimman, Chiang Mai $8–15/class","The Sanctuary & west-coast shalas, Koh Phangan","Lanta yoga decks at sunset","Bangkok: Yoganest / Rasayana retreats"],
-    sit:["Wat Suan Dok monk chat + meditation, Chiang Mai","Wat Phra That Doi Suthep quiet hours","Dipabhavan / island silent sits on Phangan","Morning alms as a spectator, not a photo hunt"],
-    sound:["Koh Phangan gong & crystal-bowl nights $15–30","Chiang Mai sound-healing rooms in Nimman / Old City","Pai riverside bowls in high season"]
-  },
-  vn: {
-    beach:["An Bang + Bai Dai, Hoi An","My Khe / Non Nuoc, Da Nang","Lang Co lagoon","Nha Trang Doc Let","Quy Nhon Bai Xep","Phu Quoc Sao / Ong Lang / Bai Truong","Con Dao Lo Voi","Phan Thiet Mui Ne dunes beach","Ha Long islet beaches (boat)"],
-    nature:["Ninh Binh / Tam Coc / Trang An","Phong Nha–Ke Bang caves","Ha Giang loop karst","Sapa terraces","Ba Be lake","Cat Tien NP","Mekong Delta orchards"],
-    spa:["Hoi An herbal / foot spas $8–18","HCMC district 1 hotel spas"],
-    dive:["Nha Trang islands","Phu Quoc reefs","Con Dao for clearer water"],
-    music:["Hanoi jazz bars (Binh Minh, Swing)","Acoustic cafés in Hoi An","HCMC rooftop live sets"],
-    shop:["Bến Thành + night market fabric","Hoi An tailor street","Đồng Xuân wholesale"],
-    stay:["Dorm $5–10","Homestay $12–22","Colonial mid $25–50","Beach resort $60+"],
-    yoga:["Hoi An riverside shalas $6–12","Da Lat pine-hill retreats","HCMC / Hanoi studio classes"],
-    sit:["Trúc Lâm Zen monastery, Da Lat","Từ Hiếu, Huế — Thích Nhất Hạnh’s root temple","Pagoda dawn sits if you arrive quietly"],
-    sound:["Hoi An / Da Lat cacao + bowl evenings","Occasional HCMC wellness lofts"]
-  },
-  kh: {
-    beach:["Otres, Sihanoukville (pick the end)","Koh Rong Long Beach","Kep crab beach"],
-    spa:["Siem Reap spa streets $10–20","Frangipani / Bodia"],
-    dive:["Koh Rong / Koh Rong Samloem reefs — visibility varies"],
-    music:["Siem Reap pub street + a few live rooms","Phnom Penh riverside bars"],
-    shop:["Psar Chaa","Made in Cambodia market","Pepper from Kampot"],
-    stay:["Dorm $4–8","Guesthouse $10–20","Siem Reap boutique $25–50","Island bungalow $20–45"],
-    yoga:["Siem Reap yoga barns $6–12","Kampot river-deck classes"],
-    sit:["Angkor at opening — sit, don’t sprint","Pagodas on the outskirts of Siem Reap"],
-    sound:["Siem Reap sound-healing rooms near Wat Bo"]
-  },
-  la: {
-    beach:["4000 Islands sandbars — river, not ocean"],
-    spa:["Luang Prabang herbal steam + massage $8–18"],
-    dive:["None serious — go to Thailand or Vietnam"],
-    music:["LPB night-market buskers","Vientiane hotel bars"],
-    shop:["LPB night market textiles","Talat Sao"],
-    stay:["Guesthouse $6–15","Heritage boutique $30–70"],
-    yoga:["Luang Prabang sunrise yoga decks $8–15"],
-    sit:["Vat Xieng Thong before tour buses","Ubosot quiet hours; ask before sitting inside"],
-    sound:["LPB wellness houses — gong nights in season"]
-  },
-  id: {
-    beach:["Balangan / Bingin / Padang Padang, Bali","Nusa Dua / Sanur quieter","Nusa Penida Crystal Bay + Kelingking view","Nusa Lembongan Dream Beach","Gili T / Air / Meno","Kuta / Selong, Lombok","Pink Beach Komodo","Nihiwatu Sumba (splurge)","Raja Ampat sands if you fly far"],
-    nature:["Tegalalang + Campuhan ridge","Mount Batur sunrise","Sekumpul / Tegenungan falls","Komodo / Padar hike","Mount Rinjani (fit)","Borobudur dawn from hill"],
-    spa:["Ubud spa belt $15–40","Yoga + massage packages"],
-    dive:["Tulamben USS Liberty wreck","Menjangan","Komodo / Padar liveaboards","Gili Air muck + turtles"],
-    music:["Ubud jazz / warung stages","Canggu beach clubs (loud)","Yogya campus bars"],
-    shop:["Ubud Art Market","Seminyak boutiques","Yogya batik"],
-    stay:["Dorm $6–12","Losmen $12–25","Ubud villa $35–80","Gili bungalow $18–40","Resort $100+"],
-    yoga:["Yoga Barn, Ubud — drop-in + multi-day","Intuitive Flow / The Practice, Canggu","Sanur and Uluwatu clifftop shalas","Yoga at sunrise on Gili Air"],
-    sit:["Silent sits at Yoga Barn","Brahma Vihara Arama, Lovina","Munduk / Sidemen village retreats"],
-    sound:["Ubud crystal-bowl and gong baths $15–40","Canggu cacao + sound evenings","Ubud Sacred Wellness / similar rooms"]
-  },
-  my: {
-    beach:["Pantai Cenang, Langkawi","Tanjung Rhu","Perhentian / Tioman (east, monsoon matters)","Kapas"],
-    spa:["KL hotel spas","Langkawi Ayurveda / Malay urut"],
-    dive:["Sipadan (permits)","Perhentian reefs","Tioman"],
-    music:["No Black Tie, KL","Penang live pubs"],
-    shop:["Central Market KL","Penang Chowrasta","Pavilion if you need malls"],
-    stay:["Dorm $8–15","Hotel $20–40","Island chalet $25–60"],
-    yoga:["KL studio scene (True / YogaWorks type)","Penang heritage-house classes","Langkawi beach yoga"],
-    sit:["Buddhist Maha Vihara, Brickfields","Kek Lok Si quiet hours, Penang"],
-    sound:["KL / Penang sound-healing pop-ups"]
-  },
-  sg: {
-    beach:["Tanjong Beach, Sentosa","East Coast Park"],
-    spa:["Chin town / Orchard hotel spas — pricey"],
-    dive:["Day trips only; fly to Tioman or Perhentian"],
-    music:["Blu Jaz","Esplanade buskers","Timbre"],
-    shop:["Chinatown Complex","Mustafa","Orchard if you must"],
-    stay:["Hostel $25–45","Hotel $90+"],
-    yoga:["City studios — book ahead, not cheap"],
-    sit:["Kong Meng San Phor Kark See","Botanic Gardens dawn walk as a sit"],
-    sound:["Occasional studio sound baths — check ClassPass-style boards"]
-  },
-  ph: {
-    beach:["Nacpan, El Nido","Coron lakes + beaches","Cloud 9, Siargao","Alona, Bohol","Siquijor"],
-    spa:["Island massage shacks $8–15","Manila hotel spas"],
-    dive:["Coron WWII wrecks","Apo Island","Moalboal sardine run","Siargao reefs","Tubbataha liveaboard"],
-    music:["Manila jazz / Route 196 type rooms","Cebu live bars","Siargao acoustic nights"],
-    shop:["Salcedo Weekend Market","Island souvenir stalls","Greenbelt if in Manila"],
-    stay:["Dorm $8–15","Fan room $12–25","Beach hut $20–45","Resort $80+"],
-    yoga:["Siargao shalas (General Luna)","El Nido / Coron beach yoga","Manila / Makati studios"],
-    sit:["Quiet coves at dawn on Siargao","Siquijor — keep it respectful, skip the gimmicks"],
-    sound:["Siargao full-moon sound circles","Palawan resort bowls"]
-  },
-  mm: {
-    beach:["Ngapali if access allows"],
-    spa:["Yangon hotel spas"],
-    dive:["Myanmar Mergui liveaboards — check access and advisories"],
-    music:["Limited; Yangon hotel stages"],
-    shop:["Bogyoke Aung San Market"],
-    stay:["Guesthouse $10–25"],
-    yoga:["Only if access and safety allow — check current advice"],
-    sit:["Myanmar has a deep vipassana tradition — only travel if official guidance says it is appropriate"],
-    sound:["Not a current sound-bath circuit"]
-  },
-  jp: {
-    beach:["Naoshima / Seto","Okinawa / Kerama","Shonan if you are in Tokyo"],
-    spa:["Onsen towns: Hakone, Kinosaki, Beppu","Sentō in cities $4–8"],
-    dive:["Kerama, Okinawa","Izu","Ogasawara if time"],
-    music:["Shinjuku / Shibuya live houses","Jazz in Shinjuku Pit Inn","Osaka clubs"],
-    shop:["Don Quijote","Nishiki food","vintage in Koenji / Shimokita"],
-    stay:["Capsule $25–40","Business hotel $50–90","Ryokan $120+"],
-    yoga:["Tokyo / Kyoto studio drop-ins","Onsen-town morning yoga in Hakone"],
-    sit:["Zazen at a Kyoto or Kamakura temple (book English sessions)","Koyasan night at a shukubo temple-lodge","Sōjiji / Eihei-ji if you plan ahead"],
-    sound:["Tokyo wellness lofts — crystal bowls exist, not the main draw"]
-  },
-  kr: {
-    beach:["Haeundae / Songjeong, Busan","Jeju Hamdeok"],
-    spa:["Jjimjilbang $8–15","Hotel spas in Gangnam"],
-    dive:["Jeju waters — cold compared with SEA"],
-    music:["Hongdae live clubs","Busan jazz bars"],
-    shop:["Myeongdong","Gwangjang food stalls","vintage Hongdae"],
-    stay:["K-guesthouse $20–40","Hotel $60–110"],
-    yoga:["Seoul studio scene (Itaewon / Gangnam)","Jeju retreat weekends"],
-    sit:["Templestay program — book on templestay.com","Jogyesa / Bongeunsa dawn service"],
-    sound:["Seoul sound-healing studios"]
-  },
-  tw: {
-    beach:["Kenting","Green Island","some east-coast coves"],
-    spa:["Beitou hot springs","Jiaoxi"],
-    dive:["Green Island","Kenting reefs","Xiaoliuqiu"],
-    music:["The Wall / Revolver Taipei","Kaohsiung live rooms"],
-    shop:["Ximending","night-market stalls","Eslite"],
-    stay:["Hotel $35–70","Homestay $30–55"],
-    yoga:["Taipei studio density is high and good value","Taitung / east-coast retreats"],
-    sit:["Dharma Drum / Chung Tai day visits","Mountain monasteries near Taipei"],
-    sound:["Taipei crystal-bowl rooms"]
-  },
-  hk: {
-    beach:["Repulse Bay","Shek O","Cheung Sha, Lantau"],
-    spa:["Hotel spas — expensive"],
-    dive:["Better as a hop to PH or TW"],
-    music:["Hidden Agenda-type rooms / Lockout","Fringe Club"],
-    shop:["PMQ","Temple Street","Donki"],
-    stay:["Hostel $25–45","Hotel $120+"],
-    yoga:["Sheung Wan / Sai Ying Pun studios"],
-    sit:["Chi Lin Nunnery","early Peak or reservoir walk as a sit"],
-    sound:["Studio sound baths — search locally"]
-  },
-  cn: {
-    beach:["Sanya, Hainan","Xiamen boardwalk"],
-    spa:["Hot springs near cities","foot massage streets $8–15"],
-    dive:["Sanya / Wuzhizhou — not world-class"],
-    music:["Beijing / Shanghai live houses"],
-    shop:["local night markets","not the fake-luxury malls"],
-    stay:["Hotel $25–60"],
-    yoga:["Shanghai / Beijing / Chengdu studio scenes"],
-    sit:["Chengdu Wenshu / Emei if you go west","Temple courtyards at opening"],
-    sound:["Big-city wellness centres"]
-  },
-  in: {
-    beach:["Varkala / Kovalam, Kerala","Palolem / Agonda, Goa","Gokarna"],
-    spa:["Kerala Ayurveda $15–40","Rishikesh yoga shalas"],
-    dive:["Andaman (Havelock) — extra permit / flight"],
-    music:["Goa / Hampi season stages","Bengaluru live rooms","Rishikesh Ganga aarti is ritual, not a gig"],
-    shop:["Khadi / handicraft emporia","Jaipur textiles","Kerala coir and spice"],
-    stay:["Guesthouse $8–20","Heritage haveli $30–70","Beach hut $15–40","Ashram $10–25"],
-    yoga:["Rishikesh — drop-in halls and TTC schools","Auroville / Pondicherry","Varkala cliff shalas","Mysore Ashtanga if you book a month","Dharamshala / Bhagsu classes"],
-    sit:["Vipassana as taught at Dhamma centres (10-day silent)","Sarnath / Bodh Gaya pilgrimage sits","Isha / ashram schedules — read the rules first"],
-    sound:["Rishikesh gong and kirtan nights","Goa / Auroville sound journeys","Himalayan bowl sessions in Dharamshala"]
-  },
-  np: {
-    beach:["Pokhara lakeside — lake, not sea"],
-    spa:["Pokhara / Thamel massage $8–18"],
-    dive:["None"],
-    music:["Thamel live covers","Pokhara lakeside acoustic"],
-    shop:["Thamel trekking shops","Asan spices"],
-    stay:["Lodge $5–15","Lakeside hotel $20–40"],
-    yoga:["Pokhara lakeside shalas $5–10","Kathmandu studios in Thamel / Boudha"],
-    sit:["Kopan Monastery courses, near Boudha","Boudhanath kora at dawn","Lumbini if you make the journey"],
-    sound:["Pokhara singing-bowl sessions $8–20","Boudha bowl shops that actually teach, not only sell"]
-  },
-  lk: {
-    beach:["Unawatuna / Mirissa / Hiriketiya","Arugam Bay surf","Pasikudah east"],
-    spa:["Ayurveda in Bentota / south $20–50"],
-    dive:["Hikkaduwa","Trinco wrecks","Pigeon Island"],
-    music:["Colombo jazz rooms","beach-bar DJs"],
-    shop:["Pettah","Galle Fort boutiques"],
-    stay:["Guesthouse $12–25","Colonial villa $40–80","Beach hotel $50+"],
-    yoga:["Hiriketiya / Ahangama shalas","Ulpotha seasonal retreat (book months ahead)","Unawatuna / Mirissa decks"],
-    sit:["Kanduboda / island meditation centres","Temple sits in Kandy if you go inland"],
-    sound:["South-coast cacao + bowl nights","Bentota wellness hotels"]
-  },
-  mv: {
-    beach:["Every local island sandbank","Bikini beach on inhabited islands"],
-    spa:["Resort spas $80–200","local island massage cheaper"],
-    dive:["House reefs","manta season at Ari / Baa","wreck dives near Malé"],
-    music:["Resort nights; Malé is quiet"],
-    shop:["Malé local market","resort boutiques"],
-    stay:["Local island guesthouse $40–80","Resort $250+"],
-    yoga:["Resort sunrise yoga — often included","A few local-island decks"],
-    sit:["Sandbank dawn — self-guided","Friday mosque etiquette in Malé; not a tourist sit"],
-    sound:["Overwater spa sound treatments at higher-end resorts"]
-  },
-  ge: {
-    beach:["Batumi Black Sea — pebbles"],
-    spa:["Tbilisi sulfur baths $20–40"],
-    dive:["Not a dive destination"],
-    music:["Tbilisi techno / live rooms","supra singing is the folk live show"],
-    shop:["Dry Bridge flea","Wine shops in Kakheti"],
-    stay:["Old town guesthouse $15–30","Boutique $40–80"],
-    yoga:["Tbilisi studio scene (Vera / Sololaki)","Kakheti harvest-season retreats"],
-    sit:["Sulfur-bath rest as recovery, not religion","Mountain quiet in Kazbegi"],
-    sound:["Tbilisi gong / cacao evenings"]
-  },
-  kz: {beach:["Not the reason to come"], spa:["Almaty hotel spas"], dive:["None"], music:["Almaty live bars"], shop:["Green Bazaar"], stay:["Hotel $25–50"], yoga:["Almaty studios"], sit:["Big Almaty Lake dawn — self-guided"], sound:["Almaty wellness rooms"]},
-  uz: {beach:["None"], spa:["Hammam in Bukhara / Tashkent"], dive:["None"], music:["Wedding pop; a few Tashkent rooms"], shop:["Siyob / Chorsu"], stay:["B&B $12–25"], yoga:["Tashkent studios"], sit:["Mosque courtyards at quiet hours — dress and behave as a guest"], sound:["Rare"]},
-  kg: {beach:["Issyk-Kul north shore"], spa:["Karakol / Altyn Arashan hot springs"], dive:["None"], music:["Bishkek bars"], shop:["Osh Bazaar"], stay:["Hostel $6–12","Yurt $15–30"], yoga:["Bishkek / Karakol drop-ins in summer"], sit:["Yurt-camp dawn at Song-Kul"], sound:["Issyk-Kul seasonal retreats"]},
-  am: {beach:["Lake Sevan pebbles"], spa:["Jermuk / city spas"], dive:["None"], music:["Yerevan jazz / folk rooms"], shop:["Vernissage crafts"], stay:["Apartment $15–30"], yoga:["Yerevan studios"], sit:["Geghard / Tatev — sit outside, don’t treat liturgy as a class"], sound:["Yerevan sound rooms"]},
-  bn: {beach:["Muara Beach"], spa:["Hotel only"], dive:["Limited"], music:["Hotel lounges"], shop:["Gadong night market"], stay:["Hotel $40–80"], yoga:["Hotel gym classes"], sit:["Mosque etiquette; not a retreat scene"], sound:["None notable"]},
-  tl: {beach:["Areia Branca","Atauro coves","Jaco"], spa:["Almost none"], dive:["Atauro — excellent, low crowds"], music:["Dili hotel bars"], shop:["Beach stalls"], stay:["Guesthouse $15–35"], yoga:["Dili / Atauro occasional decks"], sit:["Atauro dawn — self-guided"], sound:["Rare"]},
-  bt: {beach:["None"], spa:["Hotel / hot stone limited"], dive:["None"], music:["Festival cham dances — seasonal"], shop:["Craft stalls Thimphu"], stay:["Farmstay / hotel bundled with SDF"], yoga:["Hotel sessions; this is not a drop-in yoga market"], sit:["Dzong and monastery visits with a licensed guide — photography rules are strict"], sound:["Ritual music is liturgy, not a ticketed sound bath"]},
-  bd: {beach:["Cox's Bazar — very long, busy"], spa:["Dhaka hotel"], dive:["St. Martin's limited"], music:["Dhaka rock rooms"], shop:["New Market"], stay:["Hotel $15–30"], yoga:["Dhaka hotel / studio"], sit:["Temple / mosque as a guest"], sound:["Limited"]},
-  mn: {beach:["Khovsgol lake shore"], spa:["UB hotel"], dive:["Ice / none for tourists"], music:["UB live folk fusion"], shop:["Narantuul"], stay:["Hostel $8–15","Ger camp $20–40"], yoga:["UB studios"], sit:["Ger-camp dawn on the steppe"], sound:["Khoomii is folk throat-singing — concerts, not crystal bowls"]}
-};
-
-const STAY_CATS = [
-  {id:"dorm", name:"Hostel dorm", lo:5, hi:18, note:"Lockers, social, earplugs. Best in TH, VN, ID, NP."},
-  {id:"guest", name:"Guesthouse / fan room", lo:10, hi:25, note:"Family-run, breakfast sometimes, street noise."},
-  {id:"mid", name:"Simple AC hotel", lo:22, hi:45, note:"Agoda sweet spot across SEA."},
-  {id:"boutique", name:"Boutique / heritage", lo:35, hi:80, note:"Ubud, Luang Prabang, George Town, Galle."},
-  {id:"beach", name:"Beach bungalow / hut", lo:15, hi:50, note:"Lanta, Gilis, El Nido, Hiriketiya."},
-  {id:"homestay", name:"Homestay / farmstay", lo:12, hi:40, note:"Vietnam, Kerala, Bhutan farmstays."},
-  {id:"resort", name:"Resort", lo:80, hi:250, note:"Only if the beach or spa is the point."},
-  {id:"capsule", name:"Capsule / pod", lo:20, hi:45, note:"Japan, sometimes Korea / Singapore."},
-  {id:"retreat", name:"Yoga / ashram / monastery stay", lo:15, hi:90, note:"Rishikesh, Kopan, Koyasan shukubo, Ubud retreats, Korean templestay."}
-];
-
-function visaFor(nat, id) {
-  const w = WEST.has(nat);
-  const eu = EU.has(nat);
-  const asean = new Set(["SG","MY","TH","PH","ID","VN","BN"]);
-  switch (id) {
-    case "th":
-      if (nat === "TH") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","KR","SG","MY","HK","TW","BR","ZA","MX","AE"].includes(nat))
-        return {k:"vf", t:"Visa-free 30 days", d:"TDAC required. 30-day exemption from 15 Sep 2026 for many. Extensions via other visa types / DTV."};
-      if (nat === "CN") return {k:"vf", t:"Visa-free (check days)", d:"Bilateral / exemption — confirm current days."};
-      if (nat === "IN") return {k:"vf", t:"Visa-free 30 days", d:"TDAC required."};
-      return {k:"ev", t:"e-Visa / check", d:"Use thaievisa.go.th and TDAC."};
-    case "vn":
-      if (nat === "VN") return {k:"vf", t:"Home", d:"—"};
-      if (VN45.has(nat))
-        return {k:"vf", t:"Visa-free 45 days", d:"Tourism stimulus / unilateral exemption (Slovakia included until 14 Aug 2028). 90-day e-visa if you want longer: evisa.gov.vn."};
-      if (asean.has(nat) || nat === "TH" || nat === "MY") return {k:"vf", t:"Visa-free ~30 days", d:"ASEAN / bilateral."};
-      return {k:"ev", t:"e-Visa up to 90 days", d:"Official only: evisa.gov.vn. Single or multiple entry."};
-    case "kh":
-      if (nat === "KH") return {k:"vf", t:"Home", d:"—"};
-      return {k:"ev", t:"e-Visa / VOA 30 days", d:"~$30. Official evisa.gov.kh. Avoid copycat sites."};
-    case "la":
-      if (nat === "LA") return {k:"vf", t:"Home", d:"—"};
-      return {k:"ev", t:"e-Visa / VOA 30 days", d:"laoevisa.gov.la"};
-    case "id":
-      if (nat === "ID") return {k:"vf", t:"Home", d:"—"};
-      if (asean.has(nat)) return {k:"vf", t:"Visa exemption 30 days", d:"Leisure purpose."};
-      return {k:"vo", t:"VOA / e-VOA 30 days", d:"About $35. Extend +30 days once at immigration. evisa.imigrasi.go.id"};
-    case "my":
-      if (nat === "MY") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","KR","SG","HK","TW","BN"].includes(nat)) return {k:"vf", t:"Visa-free 90 days", d:"MDAC arrival card required."};
-      if (nat === "CN") return {k:"vf", t:"Visa-free (confirm)", d:"Check current duration."};
-      if (nat === "IN") return {k:"vf", t:"Visa-free 30 days (time-limited policy)", d:"Confirm High Commission; MDAC."};
-      return {k:"ev", t:"Check / e-Visa", d:"Complete MDAC in all cases."};
-    case "sg":
-      if (nat === "SG") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","KR","MY","TH","HK","TW","BN"].includes(nat)) return {k:"vf", t:"Visa-free 90 days", d:"SG Arrival Card."};
-      return {k:"ev", t:"May need visa", d:"Check ICA before booking."};
-    case "ph":
-      if (nat === "PH") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","KR","SG","MY","HK","TW"].includes(nat)) return {k:"vf", t:"Visa-free 30 days", d:"eTravel required. Extensions at BI."};
-      if (nat === "IN") return {k:"vf", t:"Visa-free 14 days (30 with qualifying third visa)", d:"Conditions apply."};
-      return {k:"ev", t:"Visa may be required", d:"etravel.gov.ph + embassy."};
-    case "mm":
-      return {k:"ev", t:"e-Visa", d:"evisa.moip.gov.mm — also read travel advisories."};
-    case "bn":
-      if (w || asean.has(nat)) return {k:"vf", t:"Visa-exempt (14–90 days)", d:"Depends on passport."};
-      return {k:"vo", t:"VOA / visa", d:"Confirm MFA Brunei."};
-    case "tl":
-      return {k:"vo", t:"VOA ~30 days", d:"Typical for many passports."};
-    case "jp":
-      if (nat === "JP") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["SG","MY","KR","HK","TW","BN","MX","AE"].includes(nat)) return {k:"vf", t:"Visa-free 90 days", d:"No e-visa needed for short tourism."};
-      return {k:"ev", t:"Visa / eVISA", d:"mofa.go.jp JAPAN eVISA if eligible from residence country."};
-    case "kr":
-      if (nat === "KR") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","SG","MY","HK","TW"].includes(nat)) return {k:"vf", t:"Visa-free 90 days", d:"K-ETA may still apply for some."};
-      return {k:"ev", t:"K-ETA / visa", d:"k-eta.go.kr"};
-    case "tw":
-      if (nat === "TW") return {k:"vf", t:"Home", d:"—"};
-      if (w || ["JP","KR","SG","MY"].includes(nat)) return {k:"vf", t:"Visa-exempt 90 days", d:"BOCA list."};
-      return {k:"ev", t:"eVisa only in narrow cases", d:"Most others need a visa. boca.gov.tw"};
-    case "hk":
-      if (w || ["JP","KR","SG","MY","TW","TH","PH"].includes(nat)) return {k:"vf", t:"Visa-free 90 days", d:"Shorter for some passports."};
-      if (nat === "IN") return {k:"ev", t:"Pre-arrival registration / visa", d:"Check HK Immigration."};
-      return {k:"ev", t:"Check HK Immigration", d:""};
-    case "cn":
-      if (nat === "CN") return {k:"vf", t:"Home", d:"—"};
-      if (eu.has(nat) || ["GB","AU","NZ","MY","SG","TH","KR"].includes(nat))
-        return {k:"vf", t:"Visa-free pilot ~30 days", d:"Extended policies have end dates — confirm MFA. Transit-without-visa also exists."};
-      if (nat === "JP") return {k:"vf", t:"Visa-free / confirm days", d:"Confirm current bilateral."};
-      return {k:"vr", t:"Visa required", d:"US and several others still typically need a visa via COVA / VAC."};
-    case "mn":
-      if (w) return {k:"ev", t:"e-Visa or exemption", d:"Check immigration.gov.mn for your exact passport."};
-      return {k:"ev", t:"e-Visa common", d:""};
-    case "in":
-      if (nat === "IN") return {k:"vf", t:"Home", d:"—"};
-      return {k:"ev", t:"e-Visa", d:"indianvisaonline.gov.in only."};
-    case "np":
-      if (nat === "IN") return {k:"vf", t:"Open border", d:"Indian citizens follow bilateral rules."};
-      return {k:"vo", t:"VOA 15/30/90 days", d:"Pay in USD/card; or apply online."};
-    case "lk":
-      return {k:"ev", t:"ETA / e-visa", d:"eta.gov.lk"};
-    case "mv":
-      return {k:"vo", t:"VOA 30 days (tourist)", d:"Onward ticket expected."};
-    case "bt":
-      return {k:"vr", t:"Visa + SDF", d:"Official process / licensed operator."};
-    case "bd":
-      if (nat === "BD") return {k:"vf", t:"Home", d:"—"};
-      return {k:"vr", t:"Visa usually required", d:"Apply before travel."};
-    case "ge":
-      if (w || ["JP","KR","SG","AE","TR"].includes(nat)) return {k:"vf", t:"Visa-free up to 365 days", d:"One of the longest easy stays."};
-      return {k:"ev", t:"e-Visa / check", d:""};
-    case "kz":
-      if (w || ["JP","KR","SG","MY","AE"].includes(nat)) return {k:"vf", t:"Visa-free 30 days", d:""};
-      return {k:"ev", t:"e-Visa", d:""};
-    case "uz":
-      if (w || ["JP","KR","SG","MY","AE"].includes(nat)) return {k:"vf", t:"Visa-free 30 days", d:""};
-      return {k:"ev", t:"e-Visa", d:""};
-    case "kg":
-      if (w || ["JP","KR","SG"].includes(nat)) return {k:"vf", t:"Visa-free 60 days", d:""};
-      return {k:"ev", t:"e-Visa / check", d:""};
-    case "am":
-      if (w || ["JP","KR","SG","AE"].includes(nat)) return {k:"vf", t:"Visa-free 180 days", d:""};
-      return {k:"ev", t:"e-Visa", d:""};
-    default:
-      return {k:"ev", t:"Check official source", d:""};
-  }
-}
-
-const $ = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-let state = {};
-try { state = JSON.parse(localStorage.getItem("lotuslane") || "{}") || {}; } catch (e) { state = {}; }
-if (!state.cur) state.cur = "GBP";
-
-const FX = {
-  USD: 1, GBP: 0.78, EUR: 0.92, THB: 36, VND: 25000, IDR: 15500, MYR: 4.7, PHP: 56, SGD: 1.35, INR: 83, JPY: 150, KRW: 1350,
-  date: "fallback", source: "offline estimate", live: false, fetchedAt: 0
-};
-const CUR = [
-  ["GBP","£","Pound","United Kingdom"],
-  ["EUR","€","Euro","Euro area / Slovakia"],
-  ["USD","$","US dollar","United States"],
-  ["THB","฿","Baht","Thailand"],
-  ["VND","₫","Dong","Vietnam"],
-  ["IDR","Rp","Rupiah","Indonesia"],
-  ["MYR","RM","Ringgit","Malaysia"],
-  ["PHP","₱","Peso","Philippines"],
-  ["SGD","S$","Singapore $","Singapore"],
-  ["INR","₹","Rupee","India"],
-  ["JPY","¥","Yen","Japan"],
-  ["KRW","₩","Won","South Korea"]
-];
-function rate(code) { return FX[code] || 1; }
-function gbp(n) { return n * rate("GBP"); }
-function eur(n) { return n * rate("EUR"); }
-function curCode() { return state.cur || ($("#cur") && $("#cur").value) || "GBP"; }
-function toCur(usd, code) {
-  const n = (+usd || 0) * rate(code || curCode());
-  const c = code || curCode();
-  if (c === "VND" || c === "IDR" || c === "KRW" || c === "JPY") return Math.round(n);
-  if (n >= 100) return Math.round(n);
-  return Math.round(n * 100) / 100;
-}
-function fmt(usd, code) {
-  const c = code || curCode();
-  const row = CUR.find(x => x[0] === c) || ["USD","$",""];
-  const v = toCur(usd, c);
-  return row[1] + (Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2));
-}
-function money(usd, extra=true) {
-  const n = +usd || 0;
-  const main = fmt(n);
-  if (!extra) return main;
-  return `<span class="fx">${main}<small>$ ${n.toFixed(0)} · £${toCur(n,"GBP")} · €${toCur(n,"EUR")}</small></span>`;
-}
-function moneyRange(a, b) {
-  return `<span class="fx">${fmt(a)}–${fmt(b)}<small>$ ${a}–${b} · £${toCur(a,"GBP")}–${toCur(b,"GBP")} · €${toCur(a,"EUR")}–${toCur(b,"EUR")}</small></span>`;
-}
-function applyRates(rates, meta) {
-  if (!rates) return false;
-  const g = rates.GBP || rates.gbp;
-  const e = rates.EUR || rates.eur;
-  if (!g || !e) return false;
-  CUR.forEach(([c]) => {
-    const v = rates[c] || rates[c.toLowerCase()];
-    if (v) FX[c] = +v;
-  });
-  FX.USD = 1;
-  FX.date = meta.date || new Date().toISOString().slice(0,10);
-  FX.source = meta.source;
-  FX.live = true;
-  FX.fetchedAt = Date.now();
-  localStorage.setItem("lotuslane_fx", JSON.stringify(FX));
-  return true;
-}
-function renderRatesBar() {
-  const el = $("#ratesBar");
-  if (!el) return;
-  const stamp = FX.live ? `Live ${FX.date}` : `Cached ${FX.date}`;
-  const chips = CUR.slice(0,3).map(([c,s]) => `<button class="chip ${curCode()===c?"on":""}" type="button" data-cur="${c}">${s} ${c}</button>`).join("");
-  const asia = `฿${toCur(1,"THB")} · ₫${toCur(1,"VND").toLocaleString()} · Rp${toCur(1,"IDR").toLocaleString()} · ₹${toCur(1,"INR")} · ¥${toCur(1,"JPY")}`;
-  el.innerHTML = `<b>Prices in ${curCode()}</b>
-    ${chips}
-    <span class="meta">1 USD = £${rate("GBP").toFixed(4)} · €${rate("EUR").toFixed(4)} · ${asia} · ${stamp} · ${FX.source}</span>
-    <button class="chip" id="fxReload" type="button">Refresh rates</button>`;
-  $$("#ratesBar [data-cur]").forEach(b => b.onclick = () => setCur(b.dataset.cur));
-  const btn = $("#fxReload");
-  if (btn) btn.onclick = () => loadRates(true);
-  const scoot = $("#statScoot");
-  if (scoot) scoot.innerHTML = moneyRange(4,10);
-  const sel = $("#budget");
-  if (sel) {
-    const v = sel.value;
-    [...sel.options].forEach(o => {
-      const n = +o.value;
-      o.textContent = `${o.value === "25" ? "Backpacker" : o.value === "40" ? "Lean mid" : o.value === "70" ? "Comfort" : "Flashpacker"} · ${money(n,false)}`;
-    });
-    sel.value = v;
-  }
-}
-function parseFxPayload(url, j) {
-  if (j.rates) return j.rates;
-  if (j.usd) {
-    const out = { USD: 1 };
-    Object.keys(j.usd).forEach(k => { out[k.toUpperCase()] = j.usd[k]; });
-    return out;
-  }
-  return null;
-}
-async function loadRates(force) {
-  if (!force && FX.fetchedAt && Date.now() - FX.fetchedAt < 15 * 60 * 1000 && FX.live) {
-    renderRatesBar();
-    if (typeof renderBudget === "function") renderBudget();
-    return;
-  }
-  const sources = [
-    { url: "https://open.er-api.com/v6/latest/USD", name: "open.er-api.com" },
-    { url: "https://api.exchangerate-api.com/v4/latest/USD", name: "exchangerate-api.com" },
-    { url: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json", name: "currency-api / jsDelivr" },
-    { url: "https://api.frankfurter.app/latest?from=USD&to=GBP,EUR,THB,IDR,MYR,PHP,SGD,INR,JPY,KRW", name: "ECB / Frankfurter" }
-  ];
-  let ok = false;
-  for (const src of sources) {
-    try {
-      const r = await fetch(src.url, { cache: "no-store" });
-      if (!r.ok) continue;
-      const j = await r.json();
-      const rates = parseFxPayload(src.url, j);
-      if (applyRates(rates, { date: j.date || j.time_last_update_utc || new Date().toISOString().slice(0,10), source: src.name })) {
-        ok = true;
-        break;
-      }
-    } catch (e) { /* next */ }
-  }
-  renderRatesBar();
-  if (typeof renderCards === "function") renderCards();
-  if (typeof renderBudget === "function") renderBudget();
-  if (typeof renderMove === "function") renderMove();
-  if (typeof renderPlay === "function") renderPlay();
-  return ok;
-}
-(function restoreFx() {
-  try {
-    const s = JSON.parse(localStorage.getItem("lotuslane_fx") || "null");
-    if (s && s.GBP && s.EUR) Object.assign(FX, s, { source: (s.source || "") + " (saved)" });
-  } catch (e) {}
-})();
-setInterval(() => { if (document.visibilityState === "visible") loadRates(false); }, 30 * 60 * 1000);
-
-function save() { localStorage.setItem("lotuslane", JSON.stringify(state)); }
-
-(function fillPassports() {
-  const sel = $("#nat");
-  if (!sel) return;
-  NATS.forEach(([c,n]) => {
-    const o = document.createElement("option");
-    o.value = c; o.textContent = n;
-    if ((state.nat || "SK") === c) o.selected = true;
-    sel.appendChild(o);
-  });
-})();
-if (state.diet && $("#diet")) $("#diet").value = state.diet;
-if (state.budget && $("#budget")) $("#budget").value = state.budget;
-if (state.cur && $("#cur")) $("#cur").value = state.cur;
-if (state.start && $("#start")) $("#start").value = state.start;
-else {
-  const d = new Date(); d.setDate(d.getDate()+21);
-  $("#start").value = d.toISOString().slice(0,10);
-}
-
-function go(id) {
-  const panel = document.getElementById(id);
-  if (!panel) return;
-  $$(".panel").forEach(p => p.classList.remove("on"));
-  panel.classList.add("on");
-  $$("nav.links button").forEach(b => b.classList.toggle("active", b.dataset.go === id));
-  $$(".mobile-nav button").forEach(b => b.classList.toggle("active", b.dataset.go === id));
-  window.scrollTo({top:0, behavior:"smooth"});
+const NEAR = ["Bangkok","Chiang Mai","Hanoi","Ho Chi Minh City","Siem Reap","Ubud","Kuala Lumpur","Singapore","Tokyo","Taipei","Seoul","Delhi","Kathmandu","Colombo","Tbilisi"];
+let FX = {USD:1,GBP:0.78,EUR:0.92,THB:34,VND:25000,IDR:15800,MYR:4.4,PHP:57,SGD:1.3,INR:84,JPY:149,KRW:1350};
+let state = JSON.parse(localStorage.getItem("lotuslane_v2")||"{}");
+state.diary = state.diary||[]; state.nat = state.nat||"SK"; state.cur = state.cur||"EUR";
+function save(){ localStorage.setItem("lotuslane_v2", JSON.stringify(state)); }
+function rate(c){ return FX[c]||1; }
+function money(usd){ const n = usd*rate(state.cur); const s = CUR.find(x=>x[0]===state.cur)[1]; return s+(n>=100?Math.round(n).toLocaleString():n.toFixed(2)); }
+function go(id){
+  $$(".panel").forEach(p=>p.classList.remove("on"));
+  $("#"+id).classList.add("on");
+  $$("nav.bar button").forEach(b=>b.classList.toggle("on", b.dataset.go===id));
+  if(id==="plan") renderPlan();
+  if(id==="map") renderCards();
+  if(id==="play") renderPlay();
+  if(id==="visa") renderVisa();
+  if(id==="scout") scout();
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-go]");
-  if (!b) return;
+  if(!b) return;
   e.preventDefault();
-  const t = b.dataset.go;
-  try {
-    if (t === "explore") renderCards();
-    if (t === "visa") renderVisa();
-    if (t === "tools") renderBudget();
-    if (t === "home") recommendNow();
-    if (t === "fly") renderFly();
-    if (t === "play") renderPlay();
-  } catch (err) { console.error(err); }
-  go(t);
+  go(b.dataset.go);
 });
-
-function setCur(code) {
-  pullBudgetUSD();
-  state.cur = code;
-  const sel = $("#cur");
-  if (sel) sel.value = code;
-  save();
-  pushBudgetInputs();
-  try { renderRatesBar(); renderCards(); renderPlay(); renderBudget(); renderMove(); } catch (err) {}
-}
-const NEAR = [
-  {name:"Bangkok", id:"th", lat:13.7563, lon:100.5018, food:["Jay stalls & vegan cafés, Ari / Thonglor","Or Tor Kor fruit market","Chatuchak weekend eats"], nature:["Lumphini Park","Bang Krachao green lung","Ayutthaya day trip ruins + river"], see:["Grand Palace / Wat Pho","Chinwat night boats"]},
-  {name:"Chiang Mai", id:"th", lat:18.7883, lon:98.9853, food:["Sunday Walking Street jay stalls","Pun Pun / vegan cafés around Nimman"], nature:["Doi Suthep + Doi Inthanon","Mae Sa waterfalls"], see:["Old City temples"]},
-  {name:"Hanoi", id:"vn", lat:21.0278, lon:105.8342, food:["Phở chay + bún chay Old Quarter","Đồng Xuân market fruit"], nature:["Hoàn Kiếm lake loop","Ninh Binh / Tam Coc day trip"], see:["Temple of Literature"]},
-  {name:"Ho Chi Minh City", id:"vn", lat:10.8231, lon:106.6297, food:["District 1 chay canteens","Ben Thanh fruit"], nature:["Tao Dan park","Cu Chi + countryside"], see:["Independence Palace"]},
-  {name:"Siem Reap", id:"kh", lat:13.3633, lon:103.8564, food:["Pub Street vegan kitchens","Psar Chaa produce"], nature:["Tonlé Sap","Phnom Kulen"], see:["Angkor Wat sunrise"]},
-  {name:"Ubud", id:"id", lat:-8.5069, lon:115.2625, food:["Yoga Barn café / Clear Café","Gianyar night market"], nature:["Campuhan Ridge","Tegalalang rice","waterfalls north"], see:["Sacred Monkey Forest"]},
-  {name:"Kuala Lumpur", id:"my", lat:3.1390, lon:101.6869, food:["Jalan Alor + vegan cafés Bukit Bintang","Central Market"], nature:["KLCC Park","Batu Caves limestone"], see:["Petronas Towers walk"]},
-  {name:"Singapore", id:"sg", lat:1.3521, lon:103.8198, food:["Hawker centres: Tekka, Chinatown Complex"], nature:["Gardens by the Bay","MacRitchie Reservoir"], see:["Chinatown + Sri Mariamman"]},
-  {name:"Tokyo", id:"jp", lat:35.6762, lon:139.6503, food:["Vegan ramen (Afuri / T’s)","depachika basements"], nature:["Shinjuku Gyoen","day trip Kamakura / Nikko"], see:["Senso-ji, Shibuya"]},
-  {name:"Taipei", id:"tw", lat:25.0330, lon:121.5654, food:["Night markets + certified vegan shops"], nature:["Yangmingshan","Maokong gondola"], see:["Chiang Kai-shek Memorial"]},
-  {name:"Seoul", id:"kr", lat:37.5665, lon:126.9780, food:["Hongdae / Itaewon vegan"], nature:["Bukhansan","Hangang parks"], see:["Gyeongbokgung"]},
-  {name:"Delhi", id:"in", lat:28.6139, lon:77.2090, food:["Sattvic / Jain thalis, Connaught Place"], nature:["Lodhi Garden","day trip Agra"], see:["Old Delhi spice market"]},
-  {name:"Kathmandu", id:"np", lat:27.7172, lon:85.3240, food:["Thamel vegan bakeries"], nature:["Swayambhu hill","day hike Shivapuri"], see:["Boudhanath, Durbar squares"]},
-  {name:"Colombo", id:"lk", lat:6.9271, lon:79.8612, food:["Galle Face vegan cafés","Pettah market fruit"], nature:["Gangaramaya lake","day trip Galle"], see:["Fort + Pettah"]},
-  {name:"Tbilisi", id:"ge", lat:41.7151, lon:44.8271, food:["Vegan khinkali spots, Vera / Sololaki"], nature:["Botanical Garden","day trip Kazbegi"], see:["Old Town sulphur baths"]},
-  {name:"Mahón", id:"es", lat:39.8890, lon:4.2644, food:["Mercat des Claustre produce","harbour vegan-friendly kitchens"], nature:["Cala Pregonda / Mitjana","Albufera des Grau"], see:["Cales Fonts, Ciutadella old town"]},
-  {name:"London", id:"gb", lat:51.5074, lon:-0.1278, food:["Borough Market, Brick Lane vegan"], nature:["Hampstead Heath","Richmond Park"], see:["South Bank"]}
-];
-function haversine(a,b,c,d) {
-  const R=6371, toR=x=>x*Math.PI/180;
-  const dLat=toR(c-a), dLon=toR(d-b);
-  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a))*Math.cos(toR(c))*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-function nearestCity(lat, lon) {
-  return NEAR.map(n => ({...n, km: haversine(lat,lon,n.lat,n.lon)})).sort((a,b)=>a.km-b.km)[0];
-}
-function renderNear(n, raw) {
-  const box = $("#nearOut");
-  if (!box) return;
-  const cow = `https://www.happycow.net/searchmap?s=${encodeURIComponent(n.name)}`;
-  box.innerHTML = `
-    <p><b>${n.name}</b> ${raw?`· about ${Math.round(n.km)} km from you`:""} <span class="proof live">Klook + HappyCow</span></p>
-    <div class="scout-grid" style="margin-top:10px">
-      <div class="rec-card"><h3>Food</h3><ul class="clean">${n.food.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <div class="actions"><a class="btn p" href="${cow}" target="_blank" rel="noopener">HappyCow</a>
-        <a class="btn s" href="${klookSearch(n.name,"food tour")}" target="_blank" rel="noopener">Klook food</a></div></div>
-      <div class="rec-card"><h3>Attractions</h3><ul class="clean">${n.see.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <div class="actions"><a class="btn p" href="${klookSearch(n.name,"things to do")}" target="_blank" rel="noopener">Klook tickets</a>
-        <a class="btn s" href="https://maps.apple.com/?q=${mapQuery(n.see[0]+", "+n.name)}" target="_blank" rel="noopener">Apple Maps</a></div></div>
-      <div class="rec-card"><h3>Nature</h3><ul class="clean">${n.nature.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <div class="actions"><a class="btn p" href="${klookSearch(n.name,"nature")}" target="_blank" rel="noopener">Klook nature</a>
-        <a class="btn s" href="${klookSearch(n.name,"day trip")}" target="_blank" rel="noopener">Klook day trips</a></div></div>
-    </div>
-    <p class="meta" style="margin-top:8px">Klook is the live activity shop. Prices there are the proof, not our list.</p>`;
-}
-function locateMe() {
-  const box = $("#nearOut");
-  if (!navigator.geolocation) { if (box) box.innerHTML = `<p class="meta">This phone has no location API. Pick a country on the map instead.</p>`; return; }
-  if (box) box.innerHTML = `<p class="meta">Finding you…</p>`;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const n = nearestCity(pos.coords.latitude, pos.coords.longitude);
-    state.near = n.name; save();
-    renderNear(n, true);
-  }, () => {
-    if (box) box.innerHTML = `<p class="meta">Location blocked. Allow location for this site in Safari Settings, or open a country dossier.</p>`;
-  }, { enableHighAccuracy:false, timeout:12000, maximumAge:600000 });
-}
-function recommendNow() {
-  const box = $("#homeRecs");
-  if (!box) return;
-  const nat = state.nat || ($("#nat") && $("#nat").value) || "SK";
-  const diet = state.diet || "vegan";
-  const budget = +(state.budget || 40);
-  const scored = C.map(c => {
-    const v = visaFor(nat, c.id);
-    let s = 0;
-    if (v.k === "vf") s += 5;
-    else if (v.k === "vo") s += 3;
-    else if (v.k === "ev") s += 2;
-    if (diet !== "flex") s += c.vegan;
-    if (c.budget <= budget) s += 4;
-    else if (c.budget <= budget + 20) s += 1;
-    if (c.region === "sea") s += 1;
-    return {c, v, s};
-  }).sort((a,b) => b.s - a.s).slice(0,4);
-  box.innerHTML = scored.map(({c,v,s}) => `
-    <article class="rec-card">
-      <div class="pills">${pill(v)} ${c.vegan>=4?`<span class="pill vg">Vegan ${c.vegan}/5</span>`:""} <span class="proof">score ${s}</span></div>
-      <h3>${c.flag} ${c.name}</h3>
-      <p class="why">${v.t}. Ground ~${money(c.budget)}/day. ${c.blurb}</p>
-      <div class="actions">
-        <button class="btn p" data-open="${c.id}">Dossier</button>
-        <a class="btn s" href="${c.links.flights}" target="_blank" rel="noopener">Flights</a>
-        <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Rooms</a>
-      </div>
-    </article>`).join("");
-  $$("#homeRecs [data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
-}
-function unlockMap(e) {
-  if (e) { e.preventDefault(); e.stopPropagation(); }
+function fill(){
   const nat = $("#nat");
-  if (nat && !nat.value) nat.value = "SK";
-  state.nat = ($("#nat") && $("#nat").value) || "SK";
-  state.diet = ($("#diet") && $("#diet").value) || "vegan";
-  state.budget = ($("#budget") && $("#budget").value) || "40";
-  state.cur = ($("#cur") && $("#cur").value) || state.cur || "GBP";
-  state.start = ($("#start") && $("#start").value) || "";
+  ["SK|Slovakia","GB|United Kingdom","DE|Germany","FR|France","ES|Spain","IT|Italy","US|United States","AU|Australia","CA|Canada","CZ|Czechia","PL|Poland","HU|Hungary","IE|Ireland","NL|Netherlands"].forEach(x=>{ const [c,n]=x.split("|"); nat.append(new Option(n,c)); });
+  nat.value = state.nat; nat.onchange = () => { state.nat=nat.value; save(); renderCards(); renderVisa(); };
+  const cur = $("#cur");
+  CUR.forEach(([c,s,land])=>cur.append(new Option(s+" "+c+" · "+land,c)));
+  cur.value = state.cur; cur.onchange = () => { state.cur=cur.value; save(); renderPlan(); };
+  const dc = $("#dCountry");
+  COUNTRIES.forEach(c=>dc.append(new Option(c.flag+" "+c.name,c.id)));
+  $("#dDate").value = new Date().toISOString().slice(0,10);
+  $("#when").value = new Date(Date.now()+21*86400000).toISOString().slice(0,10);
+  $("#dCat").onchange = () => { $("#modeWrap").style.display = $("#dCat").value==="travel"?"":"none"; };
+  $("#dCat").dispatchEvent(new Event("change"));
+}
+function renderPlan(){
+  const items = state.diary;
+  const spent = items.reduce((s,i)=>s+(+i.usd||0),0);
+  const bud = state.tripBudgetUsd||0;
+  const left = bud-spent;
+  $("#remain").className = left<0?"bad":"ok";
+  $("#remain").innerHTML = bud ? `<b>Budget ${money(bud)}</b><p>Spent ${money(spent)} · Remaining ${money(left)}</p>` : "Save a trip budget to see what is left.";
+  if(document.activeElement!==$("#tripBudget") && bud) $("#tripBudget").value = Math.round(bud*rate(state.cur));
+  $("#split").innerHTML = Object.keys(CATS).map(k=>{
+    const n = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0);
+    return `<div class="box"><span class="meta">${CATS[k][0]}</span><b>${money(n)}</b></div>`;
+  }).join("");
+  $("#list").innerHTML = items.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(it=>{
+    const c = COUNTRIES.find(x=>x.id===it.country);
+    return `<div class="box line" style="border-color:${CATS[it.cat][1]}"><b>${it.date} · ${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b><p>${it.place}</p><p>${money(it.usd)}</p><button class="btn s" type="button" data-del="${it.id}">Remove</button></div>`;
+  }).join("") || `<p class="meta">No bookings yet.</p>`;
+  $$("[data-del]").forEach(b=>b.onclick=()=>{ state.diary=state.diary.filter(x=>x.id!==b.dataset.del); save(); renderPlan(); });
+}
+function addLine(){
+  const place = $("#dPlace").value.trim();
+  if(!place){ $("#note").textContent="Type the place or flight first."; return; }
+  const usd = (+$("#dCost").value||0) / rate(state.cur);
+  const country = $("#dCountry").value;
+  state.diary.push({id:Date.now().toString(36), date:$("#dDate").value, cat:$("#dCat").value, mode:$("#dCat").value==="travel"?$("#dMode").value:"", country, place, usd});
   save();
-  try { renderRatesBar(); renderCards(); recommendNow(); } catch (err) { console.error(err); }
-  const panel = document.getElementById("explore");
-  document.querySelectorAll(".panel").forEach(p => p.classList.remove("on"));
-  if (panel) panel.classList.add("on");
-  window.scrollTo({top:0, behavior:"smooth"});
-}
-const pf = $("#passportForm");
-if (pf) pf.addEventListener("submit", unlockMap);
-const ub = $("#unlockBtn");
-if (ub) ub.addEventListener("click", unlockMap);
-const nb = $("#nearBtn");
-if (nb) nb.onclick = locateMe;
-
-let filter = "all";
-$$("#explore .chip").forEach(c => c.addEventListener("click", () => {
-  $$("#explore .chip").forEach(x => x.classList.remove("on"));
-  c.classList.add("on");
-  filter = c.dataset.f;
-  renderCards();
-}));
-if ($("#q")) $("#q").addEventListener("input", renderCards);
-if ($("#cur")) $("#cur").addEventListener("change", () => setCur($("#cur").value));
-
-function pill(v) {
-  const map = {vf:["pill vf","Visa-free"], vo:["pill vo","Visa on arrival"], ev:["pill ev","e-Visa"], vr:["pill vr","Visa required"]};
-  const [cl,tx] = map[v.k];
-  return `<span class="${cl}">${tx}</span>`;
-}
-
-function renderCards() {
-  const nat = state.nat || $("#nat").value;
-  const diet = state.diet || "vegan";
-  const budget = +(state.budget || 40);
-  $("#exploreHint").textContent = `Showing access for a ${NATS.find(n=>n[0]===nat)?.[1] || nat} passport · daily budget about $${budget}`;
-  const q = ($("#q").value || "").toLowerCase();
-  const list = C.filter(c => {
-    const v = visaFor(nat, c.id);
-    if (filter === "easy" && !(v.k==="vf"||v.k==="vo")) return false;
-    if (filter === "vegan" && c.vegan < 4) return false;
-    if (filter === "cheap" && c.budget > 40) return false;
-    if (filter === "sea" && c.region !== "sea") return false;
-    if (filter === "long" && !/90|365|180|DTV|nomad|e-visa up to 90|1 year/i.test(c.long + v.t + v.d)) return false;
-    if (q && !(c.name+" "+c.cities.join(" ")+" "+c.blurb).toLowerCase().includes(q)) return false;
-    return true;
-  });
-  $("#cards").innerHTML = list.map(c => {
-    const v = visaFor(nat, c.id);
-    const fit = c.budget <= budget + 15;
-    return `<article class="card">
-      <div class="banner" style="background:${c.color}"><span>${c.flag} ${c.name}</span></div>
-      <div class="body">
-        <div class="pills">${pill(v)} ${c.vegan>=4?`<span class="pill vg">Vegan ${c.vegan}/5</span>`:""} ${fit?`<span class="pill bd">~${money(c.budget)}/day</span>`:`<span class="pill bd">pricier ~${money(c.budget)}</span>`}</div>
-        <p class="meta">${c.blurb}</p>
-        <p class="meta"><b>${v.t}</b> — ${v.d}</p>
-        <div class="actions">
-          <button class="btn p" data-open="${c.id}">Open</button>
-          <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Rooms</a>
-          <a class="btn s" href="${c.links.flights}" target="_blank" rel="noopener">Flights</a>
-          <button class="heart ${(state.favs||[]).includes(c.id)?"on":""}" type="button" data-fav="${c.id}">${(state.favs||[]).includes(c.id)?"♥":"♡"}</button>
-        </div>
-      </div>
-    </article>`;
-  }).join("") || `<p class="meta">No matches. Clear filters.</p>`;
-  $$("[data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
-  $$("[data-fav]").forEach(b => b.onclick = ev => { ev.stopPropagation(); toggleFav(b.dataset.fav); });
-}
-function toggleFav(id) {
-  state.favs = state.favs || [];
-  if (state.favs.includes(id)) state.favs = state.favs.filter(x => x !== id);
-  else state.favs.push(id);
-  save();
-  renderCards();
-}
-
-function mapQuery(place) {
-  return encodeURIComponent(place);
-}
-function klookSearch(place, kind) {
-  const q = encodeURIComponent((place||"") + (kind ? " " + kind : ""));
-  return `https://www.klook.com/en-GB/search/result/?query=${q}`;
-}
-function mapBtns(place) {
-  const q = mapQuery(place);
-  const apple = `https://maps.apple.com/?q=${q}`;
-  const google = `https://www.google.com/maps/search/?api=1&query=${q}`;
-  const guru = `guru://search?q=${q}`;
-  const guruWeb = `https://gurumaps.app/`;
-  return `<div class="map-row">
-    <a class="btn p" href="${apple}" target="_blank" rel="noopener">Apple Maps</a>
-    <a class="btn s" href="${google}" target="_blank" rel="noopener">Google Maps</a>
-    <a class="btn s" href="${guru}" target="_blank" rel="noopener">Guru Maps Pro</a>
-    <a class="btn s" href="${klookSearch(place)}" target="_blank" rel="noopener">Klook</a>
-    <a class="btn s" href="${guruWeb}" target="_blank" rel="noopener">Get Guru Maps</a>
-  </div>
-  <p class="meta">Klook opens activities and tickets. Guru Maps opens the installed Pro app.</p>`;
-}
-function cityMapLine(c) {
-  return (c.cities || []).map(city => {
-    const q = `${city}, ${c.name}`;
-    return `<a href="https://maps.apple.com/?q=${mapQuery(q)}">${city}</a>`;
-  }).join(" · ");
-}
-
-function openCountry(id) {
-  const nat = state.nat || $("#nat").value;
-  const c = C.find(x => x.id === id);
-  const v = visaFor(nat, c.id);
-  $("#countryView").innerHTML = `
-    <div class="banner" style="background:${c.color};border-radius:20px;height:140px;display:flex;align-items:flex-end;padding:18px;color:#fff;margin:10px 0 16px">
-      <div><div class="kicker" style="color:#fff">LotusLane dossier</div><h2 style="font-size:2rem">${c.flag} ${c.name}</h2></div>
-    </div>
-    <div class="detail">
-      <div>
-        <div class="box">
-          <h3>Why go</h3>
-          <p>${c.blurb}</p>
-          <p class="meta" style="margin-top:8px">${c.rec.map(x=>"• "+x).join("<br>")}</p>
-          <h3 style="margin-top:14px">Cities that work</h3>
-          <p>${cityMapLine(c)}</p>
-          ${mapBtns(c.cities[0] + ", " + c.name)}
-          <h3 style="margin-top:14px">Vegan notes</h3>
-          <ul class="clean">${c.eats.map(x=>`<li>${x}</li>`).join("")}</ul>
-          ${SIGHTS[c.id]?`<h3 style="margin-top:14px">See</h3><ul class="clean">${SIGHTS[c.id].see.map(x=>`<li>${x}</li>`).join("")}</ul>
-          <h3 style="margin-top:14px">Markets</h3><ul class="clean">${SIGHTS[c.id].mkt.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
-          ${RIDE[c.id]?`<h3 style="margin-top:14px">Trains · buses · taxis</h3>
-            <ul class="clean"><li>${RIDE[c.id].train}</li><li>${RIDE[c.id].bus}</li><li>${RIDE[c.id].taxi}</li><li>App: ${RIDE[c.id].app}</li></ul>`:""}
-          ${playBlock(c.id)}
-        </div>
-        <div class="box" style="margin-top:12px">
-          <h3>Budget sketch / day</h3>
-          <p>~${money(c.budget)} backpacker-lean mid. ${c.stay.join(" · ")}</p>
-          <div class="budget-bar" style="margin:10px 0"><i style="width:${Math.min(100,c.budget)}%"></i></div>
-          <h3>Getting around</h3>
-          <ul class="clean">${c.move.map(x=>`<li>${x}</li>`).join("")}</ul>
-        </div>
-      </div>
-      <div>
-        <div class="box">
-          <h3>Your visa picture</h3>
-          <div class="pills" style="margin:8px 0">${pill(v)}</div>
-          <p><b>${v.t}</b></p>
-          <p class="meta">${v.d}</p>
-          <p class="meta" style="margin-top:8px"><b>Stay longer:</b> ${c.long}</p>
-          <p class="meta">${c.stayHint}</p>
-          ${govBlock(c.id)}
-        </div>
-        <div class="box" style="margin-top:12px">
-          <h3>Maps</h3>
-          ${mapBtns(c.name)}
-          <h3 style="margin-top:14px">Book it</h3>
-          <div class="links-list">
-            <a href="${c.links.flights}" target="_blank" rel="noopener">Flights</a>
-            <a href="${c.links.stay}" target="_blank" rel="noopener">Stays</a>
-            <a href="${c.links.food}" target="_blank" rel="noopener">HappyCow</a>
-            ${c.links.trains?`<a href="${c.links.trains}" target="_blank" rel="noopener">Trains / buses</a>`:""}
-          </div>
-          <p class="meta" style="margin-top:10px">Everything important is an official or major booking link. LotusLane does not take payment.</p>
-        </div>
-      </div>
+  $("#note").textContent = "Added "+place+". Still on this page.";
+  $("#dPlace").value=""; $("#dCost").value="0";
+  renderPlan();
+  if($("#dCat").value==="stay"){
+    const name = (COUNTRIES.find(c=>c.id===country)||{}).name||place;
+    const p = PLACES[country]||{food:["Search HappyCow"],nature:["Day trip parks"],see:["Old town"],shop:["Local market"],bike:["Scooter shops — check licence"]};
+    $("#near").innerHTML = `<div class="box"><h3>Near ${name}</h3>
+      <p><b>Eat</b> ${(p.food||[]).join(" · ")}</p>
+      <p><b>Shop</b> ${(p.shop||[]).join(" · ")}</p>
+      <p><b>Bike hire</b> ${(p.bike||[]).join(" · ")}</p>
+      <p><b>Nature</b> ${(p.nature||[]).join(" · ")}</p>
+      <p><b>Attractions</b> ${(p.see||[]).join(" · ")}</p>
+      <a class="btn" href="https://www.happycow.net/searchmap?s=${encodeURIComponent(name)}" target="_blank">HappyCow</a>
+      <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent(name)}" target="_blank">Apple Maps</a>
+      <a class="btn s" href="https://www.klook.com/en-GB/search/result/?query=${encodeURIComponent(name)}" target="_blank">Klook</a>
     </div>`;
-  go("country");
-}
-
-function govBlock(id) {
-  const g = GOV[id];
-  if (!g) return "";
-  const links = (arr, label) => arr && arr.length ? `<div class="gov-row"><span class="tag">${label}</span>${arr.map(x=>`<a class="btn ${label==="Apply"?"p":"s"}" href="${x.u}" target="_blank" rel="noopener">${x.l}</a>`).join("")}</div>` : "";
-  return `<div class="gov-grid" style="margin-top:12px">${links(g.apply,"Apply")}${links(g.extend,"Extend")}<p class="meta">${g.note||""}</p></div>`;
-}
-
-function renderVisa() {
-  $("#visaLinks").innerHTML = PORTALS.map(p => `<a href="${p.url}" target="_blank" rel="noopener">${p.name}${p.kind==="extend"?" · extend":p.kind==="both"?" · apply + extend":" · apply"}</a>`).join("");
-  const nat = state.nat || $("#nat").value;
-  const rows = C.map(c => {
-    const v = visaFor(nat, c.id);
-    const g = GOV[c.id];
-    const apply = g?.apply?.[0] ? `<a href="${g.apply[0].u}" target="_blank" rel="noopener">${g.apply[0].l}</a>` : "—";
-    const ext = g?.extend?.[0] ? `<a href="${g.extend[0].u}" target="_blank" rel="noopener">${g.extend[0].l}</a>` : "—";
-    return `<tr><td>${c.flag} ${c.name}</td><td>${pill(v)} ${v.t}</td><td>${apply}</td><td>${ext}</td></tr>`;
-  }).join("");
-  $("#visaMatrix").innerHTML = `<div class="box" style="overflow:auto"><h3>Access matrix for ${NATS.find(n=>n[0]===nat)?.[1] || "your passport"}</h3>
-    <table><thead><tr><th>Country</th><th>Entry</th><th>Official apply</th><th>Official extend / immigration</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="meta" style="margin-top:10px">Links go to government domains only (.gov.kh, .gov.vn, .go.th, .go.id, immigration.gov.ph, and so on).</p></div>`;
-}
-
-$("#planForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const days = +$("#days").value;
-  const pace = $("#pace").value;
-  const region = $("#region").value;
-  const nat = state.nat || $("#nat").value;
-  const budget = +(state.budget || 40);
-  let pool = C.filter(c => {
-    if (region === "sea") return c.region === "sea" && c.budget <= 70;
-    if (region === "east") return c.region === "east";
-    if (region === "south") return c.region === "south";
-    return c.vegan >= 4;
-  });
-  pool = pool.filter(c => visaFor(nat,c.id).k !== "vr" || c.id === "in");
-  if (pace === "islands") pool = pool.filter(c => ["id","ph","th","mv","lk"].includes(c.id)).concat(pool);
-  const uniq = [];
-  const seen = new Set();
-  for (const c of pool) { if (!seen.has(c.id)) { seen.add(c.id); uniq.push(c); } }
-  const nStops = pace === "slow" ? Math.min(3, uniq.length) : pace === "islands" ? Math.min(4, uniq.length) : Math.min(days >= 45 ? 5 : 4, uniq.length);
-  const picks = uniq.slice(0, nStops);
-  const slice = Math.max(3, Math.floor(days / picks.length));
-  let cursor = new Date(state.start || $("#start").value);
-  let total = 0;
-  const daysHtml = picks.map((c,i) => {
-    const stay = i === picks.length-1 ? days - slice*(picks.length-1) : slice;
-    const cost = stay * c.budget;
-    total += cost;
-    const from = new Date(cursor);
-    cursor.setDate(cursor.getDate()+stay);
-    const v = visaFor(nat, c.id);
-    const html = `<div class="itinerary-day">
-      <b>Days ${from.toISOString().slice(0,10)} → ${new Date(cursor-86400000).toISOString().slice(0,10)} · ${c.flag} ${c.name} (${stay} nights)</b>
-      <div class="pills" style="margin:6px 0">${pill(v)}</div>
-      <p>${c.cities.slice(0,4).join(" → ")}</p>
-      <p class="meta">${c.eats[0]} · scooters/ferries: ${c.move[0]} · land cost ~${money(cost)}</p>
-      <p class="meta">${v.d}</p>
-      ${govBlock(c.id)}
-      <div class="actions">
-        <a class="btn s" href="${c.links.flights}" target="_blank" rel="noopener">Flights in</a>
-        <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Stay</a>
-        <a class="btn s" href="${c.links.food}" target="_blank" rel="noopener">Vegan map</a>
-      </div>
-    </div>`;
-    return html;
-  }).join("");
-  $("#planOut").innerHTML = `
-    <div class="okbox" style="margin-bottom:14px">
-      <b>${days}-day ${pace} sketch</b> for a ${NATS.find(n=>n[0]===nat)?.[1]} passport.
-      On-the-ground estimate <b>${money(total)}</b> (~${money(Math.round(total/days))}/day) excluding long-haul flights and visa fees.
-      ${budget < 35 ? "You picked a tight budget — favour Vietnam, Laos, Cambodia, India." : ""}
-    </div>
-    <div class="box">${daysHtml}
-      <p class="meta">Border hops: AirAsia / VietJet / 12Go buses. Never overstay a stamp. If a country is only 30 days visa-free and your slice is longer, the planner still flags the official e-visa so you can stretch legally.</p>
-    </div>`;
-});
-
-function renderMove() {
-  const rows = [
-    ["Chiang Mai / Pai", [4,8], "Night train / bus to Bangkok "+moneyRange(8,20), "https://12go.asia"],
-    ["Thai islands", [5,10], "Lomprayah / Seatran "+moneyRange(10,25), "https://www.12go.asia/en/travel/bangkok/koh-samui"],
-    ["Bali", [4,11], "Sanur → Nusa Penida "+moneyRange(6,12)+"; public Padang Bai–Lombok ~"+money(4)+" or fast boat "+moneyRange(20,35), "https://12go.asia/en/ferry/bali/lombok"],
-    ["Gili / Lombok", [5,8], "Lombok ↔ Gili T "+moneyRange(4,8)+"; Bali ↔ Gili fast boat "+moneyRange(25,55), "https://12go.asia/en/ferry/lombok/gili-trawangan"],
-    ["Vietnam", [5,8], "Hanoi–Hue train "+moneyRange(15,35), "https://www.baolau.com"],
-    ["Philippines", [6,10], "Cebu–Bohol ~"+money(16)+"; Coron–El Nido ~"+money(55), "https://www.klook.com/en-US/transport/ferries/"],
-    ["Cambodia", [5,7], "Siem Reap–Phnom Penh bus "+moneyRange(8,15), "https://12go.asia"],
-    ["Laos", [6,8], "LPB–Vientiane railway "+moneyRange(20,40), "https://www.laostickets.com"]
-  ];
-  const tb = $("#moveBody");
-  if (!tb) return;
-  tb.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${moneyRange(r[1][0], r[1][1])}</td><td>${r[2]}</td><td><a href="${r[3]}" target="_blank" rel="noopener">Tickets</a></td></tr>`).join("")
-    + `<tr><td>Japan / Korea / Taiwan</td><td>Use rail</td><td>JR / KORAIL / THSR</td><td><a href="https://www.rome2rio.com" target="_blank" rel="noopener">Rome2Rio</a></td></tr>`;
-}
-
-const _renderCards = renderCards;
-renderCards = function() { _renderCards(); renderMove(); };
-
-function skyDate(iso) {
-  if (!iso) return "";
-  const [y,m,d] = iso.split("-");
-  return y.slice(2)+m+d;
-}
-const HUB_CITY = {
-  LON:"London",LHR:"London",LGW:"London",MAN:"Manchester",
-  BKK:"Bangkok",CNX:"Chiang Mai",HKT:"Phuket",
-  HAN:"Hanoi",SGN:"Ho Chi Minh City",DAD:"Da Nang",
-  REP:"Siem Reap",PNH:"Phnom Penh",VTE:"Vientiane",LPQ:"Luang Prabang",
-  DPS:"Bali",CGK:"Jakarta",KUL:"Kuala Lumpur",PEN:"Penang",SIN:"Singapore",
-  MNL:"Manila",CEB:"Cebu",
-  NRT:"Tokyo",HND:"Tokyo",KIX:"Osaka",ICN:"Seoul",TPE:"Taipei",HKG:"Hong Kong",
-  DEL:"Delhi",BLR:"Bengaluru",BOM:"Mumbai",KTM:"Kathmandu",CMB:"Colombo",MLE:"Male",
-  TBS:"Tbilisi",ALA:"Almaty",TAS:"Tashkent"
-};
-function slug12(s) {
-  return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-}
-function addDays(iso, n) {
-  const d = new Date(iso+"T12:00:00");
-  d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
-}
-function flyUrls(from, to, dep, ret) {
-  const q = `Flights from ${from} to ${to} on ${dep}` + (ret ? ` returning ${ret}` : "");
-  const kayak = ret ? `https://www.kayak.com/flights/${from}-${to}/${dep}/${ret}` : `https://www.kayak.com/flights/${from}-${to}/${dep}`;
-  const sky = ret
-    ? `https://www.skyscanner.net/transport/flights/${from.toLowerCase()}/${to.toLowerCase()}/${skyDate(dep)}/${skyDate(ret)}/`
-    : `https://www.skyscanner.net/transport/flights/${from.toLowerCase()}/${to.toLowerCase()}/${skyDate(dep)}/`;
-  const kiwi = `https://www.kiwi.com/en/search/results/${from}/${to}/${dep}${ret?"/"+ret:""}`;
-  const gf = `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}`;
-  return {gf, kayak, sky, kiwi};
-}
-function stayUrls(city, checkin, nights) {
-  const out = addDays(checkin, nights || 5);
-  const q = encodeURIComponent(city);
-  return {
-    booking: `https://www.booking.com/searchresults.html?ss=${q}&checkin=${checkin}&checkout=${out}&group_adults=1&no_rooms=1`,
-    agoda: `https://www.agoda.com/search?text=${q}&checkIn=${checkin}&los=${nights||5}&rooms=1&adults=1`,
-    hostel: `https://www.hostelworld.com/s?q=${q}&from=${checkin}&to=${out}&guests=1`,
-    airbnb: `https://www.airbnb.com/s/${q}/homes?checkin=${checkin}&checkout=${out}&adults=1`
-  };
-}
-function groundUrls(fromCity, toCity) {
-  const a = slug12(fromCity), b = slug12(toCity);
-  return {
-    go: `https://12go.asia/en/travel/${a}/${b}`,
-    r2r: `https://www.rome2rio.com/map/${encodeURIComponent(fromCity)}/${encodeURIComponent(toCity)}`,
-    baolau: "https://www.baolau.com"
-  };
-}
-function renderFly() {
-  const fromSel = $("#flyFrom"), toSel = $("#flyTo");
-  if (!fromSel.dataset.ready) {
-    HUBS.forEach(([c,n]) => {
-      fromSel.append(new Option(`${n} (${c})`, c));
-      toSel.append(new Option(`${n} (${c})`, c));
-    });
-    fromSel.value = "LON";
-    toSel.value = "BKK";
-    const d = new Date(); d.setDate(d.getDate()+28);
-    $("#flyDate").value = d.toISOString().slice(0,10);
-    fromSel.dataset.ready = "1";
   }
-  $("#hopGrid").innerHTML = HOPS.map(h => `
-    <article class="card"><div class="body">
-      <h3>${h.from} → ${h.to}</h3>
-      <p class="meta">${h.air} · ${h.hrs}</p>
-      <p>${moneyRange(h.lo,h.hi)} one-way sale band</p>
-      <button class="btn p" data-hop="${h.from}|${h.to}">Search this hop</button>
-    </div></article>`).join("");
-  $$("[data-hop]").forEach(b => b.onclick = () => {
-    const [a,c] = b.dataset.hop.split("|");
-    $("#flyFrom").value = a; $("#flyTo").value = c;
-    go("fly"); window.scrollTo({top:0});
-    $("#flyForm").requestSubmit();
-  });
-}
-function hopBand(from, to) {
-  const h = HOPS.find(x => x.from === from && x.to === to);
-  if (h) return {lo:h.lo, hi:h.hi, note:h.air+" · "+h.hrs};
-  if (from === "LON" || from === "LHR" || from === "LGW" || from === "MAN") return {lo:380, hi:720, note:"Long-haul sale window, 6–10 weeks out"};
-  return {lo:35, hi:120, note:"Typical Asia LCC one-way if booked early"};
-}
-function runScout() {
-  const from = $("#flyFrom").value, to = $("#flyTo").value;
-  const dep = $("#flyDate").value, ret = $("#flyBack").value;
-  const nights = +($("#stayNights") && $("#stayNights").value) || 5;
-  const fromCity = HUB_CITY[from] || from;
-  const toCity = HUB_CITY[to] || to;
-  const u = flyUrls(from,to,dep,ret);
-  const s = stayUrls(toCity, dep, nights);
-  const g = groundUrls(fromCity, toCity);
-  const band = hopBand(from, to);
-  const roomLo = nights * 12, roomHi = nights * 45;
-  $("#flyLinks").innerHTML = `
-    <div class="okbox" style="margin-bottom:12px">
-      Scout for <b>${fromCity} → ${toCity}</b> on <b>${dep}</b>${ret?" · return "+ret:""} · ${nights} nights.
-      <span class="proof live">Live engines</span>
-      <span class="proof warn">Bands are estimates</span>
-    </div>
-    <div class="scout-grid">
-      <div class="box">
-        <h3>Flights</h3>
-        <p class="meta">Typical sale band ${moneyRange(band.lo, band.hi)} · ${band.note}</p>
-        <p class="meta">Proof: the site you open shows today’s fare. LotusLane does not ticket.</p>
-        <div class="actions" style="margin-top:8px">
-          <a class="btn p" href="${u.gf}" target="_blank" rel="noopener">Google Flights</a>
-          <a class="btn s" href="${u.kayak}" target="_blank" rel="noopener">Kayak</a>
-          <a class="btn s" href="${u.sky}" target="_blank" rel="noopener">Skyscanner</a>
-          <a class="btn s" href="${u.kiwi}" target="_blank" rel="noopener">Kiwi</a>
-          <a class="btn s" href="https://www.airasia.com" target="_blank" rel="noopener">AirAsia</a>
-          <a class="btn s" href="https://www.vietjetair.com" target="_blank" rel="noopener">VietJet</a>
-          <a class="btn s" href="${klookSearch(toCity, "airport transfer")}" target="_blank" rel="noopener">Klook transfer</a>
-        </div>
-      </div>
-      <div class="box">
-        <h3>Cheapest stays</h3>
-        <p class="meta">Hostel–simple hotel band ${moneyRange(roomLo, roomHi)} for ${nights} nights. Sort by price on the site.</p>
-        <div class="actions" style="margin-top:8px">
-          <a class="btn p" href="${s.agoda}" target="_blank" rel="noopener">Agoda</a>
-          <a class="btn s" href="${s.booking}" target="_blank" rel="noopener">Booking.com</a>
-          <a class="btn s" href="${s.hostel}" target="_blank" rel="noopener">Hostelworld</a>
-          <a class="btn s" href="${s.airbnb}" target="_blank" rel="noopener">Airbnb</a>
-        </div>
-      </div>
-      <div class="box">
-        <h3>Trains · buses · ferries</h3>
-        <p class="meta">12Go and Rome2Rio compare live ground options. Skip the plane when the hop is under ~8 hours on land.</p>
-        <div class="actions" style="margin-top:8px">
-          <a class="btn p" href="${g.go}" target="_blank" rel="noopener">12Go ${fromCity} → ${toCity}</a>
-          <a class="btn s" href="${g.r2r}" target="_blank" rel="noopener">Rome2Rio</a>
-          <a class="btn s" href="${g.baolau}" target="_blank" rel="noopener">Baolau (VN)</a>
-        </div>
-      </div>
-      <div class="box">
-        <h3>Bot recommendation</h3>
-        ${scoutAdvice(from, to, band)}
-        <div class="actions" style="margin-top:8px">
-          <a class="btn p" href="${klookSearch(toCity)}" target="_blank" rel="noopener">Klook ${toCity}</a>
-          <a class="btn s" href="${klookSearch(toCity, "food")}" target="_blank" rel="noopener">Klook food</a>
-          <a class="btn s" href="${klookSearch(toCity, "nature")}" target="_blank" rel="noopener">Klook nature</a>
-        </div>
-      </div>
-    </div>`;
-}
-function scoutAdvice(from, to, band) {
-  const nat = state.nat || ($("#nat") && $("#nat").value) || "SK";
-  const dest = C.find(c => (c.links.flights||"").includes(HUB_CITY[to]||"zzz")) || C.find(c => (HUB_CITY[to]||"").toLowerCase().includes(c.name.toLowerCase().slice(0,4)));
-  const byHub = {BKK:"th",CNX:"th",HKT:"th",HAN:"vn",SGN:"vn",DAD:"vn",REP:"kh",PNH:"kh",VTE:"la",LPQ:"la",DPS:"id",CGK:"id",KUL:"my",PEN:"my",SIN:"sg",MNL:"ph",CEB:"ph",NRT:"jp",HND:"jp",KIX:"jp",ICN:"kr",TPE:"tw",HKG:"hk",DEL:"in",BLR:"in",BOM:"in",KTM:"np",CMB:"lk",MLE:"mv",TBS:"ge"};
-  const c = C.find(x => x.id === byHub[to]);
-  const v = c ? visaFor(nat, c.id) : null;
-  const bits = [];
-  if (from.startsWith("L") && ["BKK","SGN","KUL","SIN","HAN"].includes(to))
-    bits.push("From Britain / Europe, Bangkok or Kuala Lumpur is usually the cheapest long-haul door into SEA. Compare Google Flights with one-stop IST / DOH / AUH.");
-  if (["BKK","CNX","HAN","SGN","KUL","DPS","REP"].includes(to))
-    bits.push("Once inside SEA, AirAsia / VietJet / 12Go buses beat another long-haul. Book the first long-haul, then local hops.");
-  if (c && c.budget <= 40) bits.push(`${c.flag} ${c.name} sits in the lean-budget band ~${money(c.budget)}/day on the ground.`);
-  if (v) bits.push(`Your passport: <b>${v.t}</b>. ${v.d}`);
-  if (band.lo <= 90) bits.push("This hop is in LCC territory. If Google Flights shows over "+fmt(150)+" one-way, change the date by 1–3 days.");
-  return `<p>${bits.join("</p><p>")}</p><p class="meta">Always buy on the airline or the engine you opened. Ignore WhatsApp “agents”.</p>`;
-}
-$("#flyForm").addEventListener("submit", e => {
-  e.preventDefault();
-  runScout();
-});
-
-function renderSights() {
-  const q = (($("#sq") && $("#sq").value) || "").toLowerCase();
-  $("#sightsList").innerHTML = C.map(c => {
-    const s = SIGHTS[c.id]; if (!s) return "";
-    const blob = (s.see.join(" ")+" "+s.mkt.join(" ")+" "+c.name).toLowerCase();
-    if (q && !blob.includes(q)) return "";
-    return `<div class="box" style="margin:10px 0">
-      <h3>${c.flag} ${c.name}</h3>
-      <p><b>See</b> — ${s.see.join(" · ")}</p>
-      <p class="meta"><b>Markets</b> — ${s.mkt.join(" · ")}</p>
-      <button class="btn s" data-open="${c.id}">Open dossier</button>
-    </div>`;
-  }).join("") || `<p class="meta">No match.</p>`;
-  $$("#sightsList [data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
-}
-if ($("#sq")) $("#sq").addEventListener("input", renderSights);
-
-let playFilter = "beach";
-function playBlock(id) {
-  const p = PLAY[id];
-  if (!p) return "";
-  const row = (t, arr) => arr && arr.length ? `<h3 style="margin-top:14px">${t}</h3><ul class="clean">${arr.map(x=>`<li>${x}</li>`).join("")}</ul>` : "";
-  return row("Beaches", p.beach)+row("Nature", p.nature)+row("Yoga", p.yoga)+row("Meditation", p.sit)+row("Sound baths", p.sound)+row("Spas", p.spa)+row("Scuba", p.dive)+row("Live music", p.music)+row("Shops", p.shop)+row("Stay types", p.stay);
-}
-function renderPlay() {
-  const q = (($("#pq") && $("#pq").value) || "").toLowerCase();
-  const box = $("#playList");
-  if (!box) return;
-  if (playFilter === "stay") {
-    box.innerHTML = `<div class="box" style="margin-bottom:12px">
-      <h3>Accommodation categories</h3>
-      <table><thead><tr><th>Type</th><th>Typical night</th><th>When to book it</th></tr></thead><tbody>
-      ${STAY_CATS.map(s=>`<tr><td><b>${s.name}</b></td><td>${moneyRange(s.lo,s.hi)}</td><td>${s.note}</td></tr>`).join("")}
-      </tbody></table>
-      <p class="meta" style="margin-top:8px">Book rooms on Agoda / Booking from each country page. Resorts only pay off if you will actually use the beach or spa.</p>
-    </div>` + C.map(c => {
-      const p = PLAY[c.id]; if (!p || !p.stay) return "";
-      if (q && !(c.name+" "+p.stay.join(" ")).toLowerCase().includes(q)) return "";
-      return `<div class="box" style="margin:10px 0"><h3>${c.flag} ${c.name}</h3><ul class="clean">${p.stay.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <a class="btn s" href="${c.links.stay}" target="_blank" rel="noopener">Rooms</a>
-        <button class="btn p" data-open="${c.id}">Dossier</button></div>`;
-    }).join("");
-  } else {
-    const label = {beach:"Beaches",spa:"Spas",dive:"Scuba sites",music:"Live music",shop:"Shops",yoga:"Yoga",sit:"Meditation",sound:"Sound baths",nature:"Nature"}[playFilter];
-    box.innerHTML = C.map(c => {
-      const p = PLAY[c.id]; if (!p) return "";
-      const items = p[playFilter] || [];
-      if (!items.length) return "";
-      if (q && !(c.name+" "+items.join(" ")).toLowerCase().includes(q)) return "";
-      return `<div class="box" style="margin:10px 0"><h3>${c.flag} ${c.name} · ${label}</h3>
-        <ul class="clean">${items.map(x=>`<li>${x}</li>`).join("")}</ul>
-        <button class="btn p" data-open="${c.id}">Open dossier</button></div>`;
-    }).join("") || `<p class="meta">Nothing in this filter.</p>`;
-  }
-  $$("#playList [data-open]").forEach(b => b.onclick = () => openCountry(b.dataset.open));
-}
-$$("#playChips .chip").forEach(ch => ch.addEventListener("click", () => {
-  $$("#playChips .chip").forEach(x => x.classList.remove("on"));
-  ch.classList.add("on");
-  playFilter = ch.dataset.play;
-  renderPlay();
-}));
-if ($("#pq")) $("#pq").addEventListener("input", renderPlay);
-
-const _go = go;
-go = function(id) {
-  try { _go(id); } catch (err) { console.error(err); }
-  try {
-    if (id === "fly") renderFly();
-    if (id === "sights") renderSights();
-    if (id === "play") renderPlay();
-    if (id === "tools") renderBudget();
-    if (id === "home") recommendNow();
-    if (id === "explore") renderCards();
-    if (id === "plan") { try { renderDiary(); } catch (e) {} }
-  } catch (err) { console.error(err); }
-};
-
-renderRatesBar();
-renderCards();
-renderVisa();
-const PACKS = {
-  sea: ["Light linen shirts x3","Quick-dry shorts","Rain jacket / poncho","Reef-safe sunscreen","Mosquito repellent","Flip-flops + trainers","Dry bag for ferries","Universal C/A adapter","Reusable bottle + filter","Earplugs / eye mask","Copies of passport","Travel insurance PDF"],
-  him: ["Fleece + light down","Trail shoes","Warm socks","Sun hat (high UV)","Water purification","Diamox only if prescribed","Head torch","Power bank 20k"],
-  city: ["One smarter outfit","IC card or cash for transit","Comfortable walking shoes","Light sweater for AC","Pocket Wi-Fi / eSIM QR"],
-  still: ["Modest clothes covering shoulders and knees","Yoga mat if you dislike rental mats","Sit cushion / scarf","Refillable bottle","Notebook","Cash for donation boxes"],
-  dive: ["Cert card + log","Swimwear x2","Rash guard","After-sun / reef-safe SPF","Motion-sickness tablets","Dry bag","Cash for boat tips"]
-};
-function renderPack(kind="sea") {
-  const extra = (state.diet==="vegan"||!state.diet) ? ["Snack bars / protein powder","Restaurant screenshots of HappyCow"] : [];
-  const items = [...(PACKS[kind]||PACKS.sea), ...extra];
-  $("#packList").innerHTML = items.map((x,i)=>`<li><label><input type="checkbox" data-packitem="${kind}-${i}"/> ${x}</label></li>`).join("");
-}
-$$("[data-pack]").forEach(ch => ch.addEventListener("click", () => {
-  $$("[data-pack]").forEach(x => x.classList.remove("on"));
-  ch.classList.add("on");
-  renderPack(ch.dataset.pack);
-}));
-const SEASONS = [
-  {n:"Mainland SEA (TH VN KH LA)", m:"gggmmbbbmmgg"},
-  {n:"Indonesia / Malaysia west", m:"gggmmbbbmmgg"},
-  {n:"Philippines / Vietnam coast", m:"gggmmmmbbbgg"},
-  {n:"India north / Nepal", m:"bbgggggmmmbb"},
-  {n:"Japan / Korea", m:"bbggggmmmmbb"},
-  {n:"Georgia / Caucasus", m:"bbbgggggmmbb"},
-  {n:"Maldives / Sri Lanka west", m:"ggggmmbbbggg"}
-];
-function renderSeasons() {
-  const months = "JFMAMJJASOND";
-  $("#seasonBox").innerHTML = SEASONS.map(s => {
-    const cells = [...s.m].map((k,i)=>`<div class="mo ${k==="g"?"g":k==="m"?"m":"b"}">${months[i]}</div>`).join("");
-    return `<p style="margin:12px 0 4px"><b>${s.n}</b></p><div class="season">${cells}</div>`;
-  }).join("");
-}
-const budUSD = { daily: 40, fly: 650, visa: 80 };
-function curLabel() {
-  const row = CUR.find(x => x[0] === curCode());
-  return row ? `${row[2]} (${row[1]} ${row[0]})` : curCode();
-}
-function pullBudgetUSD() {
-  const r = rate(curCode()) || 1;
-  if ($("#bDaily")) budUSD.daily = (+$("#bDaily").value || 0) / r;
-  if ($("#bFly")) budUSD.fly = (+$("#bFly").value || 0) / r;
-  if ($("#bVisa")) budUSD.visa = (+$("#bVisa").value || 0) / r;
-}
-function pushBudgetInputs() {
-  const r = rate(curCode()) || 1;
-  const paint = n => (n * r >= 100 ? Math.round(n * r) : Math.round(n * r * 100) / 100);
-  if ($("#bDaily")) $("#bDaily").value = paint(budUSD.daily);
-  if ($("#bFly")) $("#bFly").value = paint(budUSD.fly);
-  if ($("#bVisa")) $("#bVisa").value = paint(budUSD.visa);
-  const lab = curLabel();
-  if ($("#labDaily")) $("#labDaily").textContent = "Daily spend · " + lab;
-  if ($("#labFly")) $("#labFly").textContent = "Flights return · " + lab;
-  if ($("#labVisa")) $("#labVisa").textContent = "Visas + shots · " + lab;
-}
-function fxRow(usd) {
-  return CUR.map(([c,s,name,land]) => {
-    const n = toCur(usd, c);
-    const shown = (c==="VND"||c==="IDR"||c==="KRW"||c==="JPY") ? Math.round(n).toLocaleString() : (n>=100?Math.round(n).toLocaleString():Number(n).toFixed(2));
-    return `<div class="stat" style="background:rgba(255,255,255,.1);border:0;color:#fff"><span>${s} ${c} · ${land}</span><b>${s}${shown}</b></div>`;
-  }).join("");
-}
-function renderFxBoard() {
-  const board = $("#fxBoard");
-  const fromSel = $("#fxFrom");
-  if (fromSel && !fromSel.dataset.ready) {
-    CUR.forEach(([c,s,n,land]) => fromSel.append(new Option(`${s} ${c} — ${land}`, c)));
-    fromSel.value = curCode();
-    fromSel.dataset.ready = "1";
-    fromSel.onchange = renderFxBoard;
-    const amt = $("#fxAmt");
-    if (amt) amt.addEventListener("input", renderFxBoard);
-  }
-  if (!board) return;
-  const from = (fromSel && fromSel.value) || curCode();
-  const raw = +(($("#fxAmt") && $("#fxAmt").value) || 0);
-  const usd = raw / (rate(from) || 1);
-  board.innerHTML = CUR.map(([c,s,name,land]) => {
-    const n = toCur(usd, c);
-    const shown = (c==="VND"||c==="IDR"||c==="KRW"||c==="JPY") ? Math.round(n).toLocaleString() : (n>=100?Math.round(n).toLocaleString():Number(n).toFixed(2));
-    const on = c === from;
-    return `<article class="card" style="${on?"outline:2px solid var(--gold)":""}"><div class="body">
-      <div class="kicker">${land}</div>
-      <h3>${s} ${shown}</h3>
-      <p class="meta">${name} (${c})</p>
-    </div></article>`;
-  }).join("");
-}
-function renderBudget() {
-  const out = $("#budOut");
-  if (!out || !$("#bDays")) return;
-  pullBudgetUSD();
-  const days = +$("#bDays").value || 30;
-  const daily = budUSD.daily;
-  const fly = budUSD.fly;
-  const visa = budUSD.visa;
-  const ground = days * daily;
-  const total = ground + fly + visa;
-  const pad = total * 0.12;
-  const grand = total + pad;
-  const code = curCode();
-  out.innerHTML = `<p style="opacity:.85;margin-bottom:8px">Trip budget results · ${days} days · display ${code}</p>
-    <div class="split3">
-      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>On the ground</span><b class="big-stat">${fmt(ground)}</b></div>
-      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>Flights + visas</span><b class="big-stat">${fmt(fly+visa)}</b></div>
-      <div class="stat" style="background:rgba(255,255,255,.12);border:0;color:#fff"><span>Total + 12% buffer</span><b class="big-stat">${fmt(grand)}</b></div>
-    </div>
-    <p style="margin:12px 0 8px;opacity:.9">${days} × ${fmt(daily)} / day</p>
-    <div class="grid">${fxRow(grand)}</div>`;
-  renderFxBoard();
-}
-const budForm = $("#budForm");
-if (budForm) {
-  budForm.addEventListener("submit", e => { e.preventDefault(); renderBudget(); });
-  ["bDays","bDaily","bFly","bVisa"].forEach(id => {
-    const el = $("#"+id);
-    if (el) el.addEventListener("input", renderBudget);
-  });
-}
-
-const CATL = {stay:"Accommodation", flight:"Flight", moto:"Motorcycle rental", travel:"Travel", food:"Food", see:"Attraction"};
-const CATC = {stay:"#0e8f9a", flight:"#1a6b52", moto:"#7c4a03", travel:"#3b5bdb", food:"#e09a2b", see:"#e25d72"};
-const MODEL = {bus:"Bus", train:"Train", taxi:"Taxi", ferry:"Ferry"};
-let diaryFilter = "all";
-let diaryMonth = new Date();
-function diaryItems() {
-  state.diary = state.diary || [];
-  return state.diary;
-}
-function renderDiary() {
-  const cal = $("#diaryCal"), list = $("#diaryList"), sum = $("#diarySum");
-  if (!cal) return;
-  fillDiaryCountries();
-  if ($("#dDate") && !$("#dDate").value) $("#dDate").value = new Date().toISOString().slice(0,10);
-  const items = diaryItems();
-  const y = diaryMonth.getFullYear(), m = diaryMonth.getMonth();
-  const first = new Date(y, m, 1).getDay();
-  const days = new Date(y, m+1, 0).getDate();
-  const byDay = {};
-  items.forEach(it => { (byDay[it.date] = byDay[it.date] || []).push(it); });
-  const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  let cells = names.map(n => `<div class="mo" style="background:transparent">${n}</div>`).join("");
-  for (let i = 0; i < first; i++) cells += `<div></div>`;
-  for (let d = 1; d <= days; d++) {
-    const iso = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const marks = byDay[iso] || [];
-    const dots = marks.map(it => `<i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${CATC[it.cat]};margin:0 1px"></i>`).join("");
-    cells += `<button type="button" class="mo" data-day="${iso}" style="background:${marks.length?"#fff":"#f6efe4"};border:1px solid var(--line);min-height:42px">${d}<div>${dots}</div></button>`;
-  }
-  cal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <button type="button" class="btn s" id="calPrev">←</button>
-    <b>${diaryMonth.toLocaleString("en",{month:"long", year:"numeric"})}</b>
-    <button type="button" class="btn s" id="calNext">→</button>
-  </div><div class="season">${cells}</div>`;
-  $("#calPrev").onclick = () => { diaryMonth = new Date(y, m-1, 1); renderDiary(); };
-  $("#calNext").onclick = () => { diaryMonth = new Date(y, m+1, 1); renderDiary(); };
-  $$("#diaryCal [data-day]").forEach(b => b.onclick = () => { $("#dDate").value = b.dataset.day; });
-  const shown = items.filter(it => diaryFilter === "all" || it.cat === diaryFilter).sort((a,b) => a.date.localeCompare(b.date));
-  list.innerHTML = shown.map(it => `<div class="box" style="margin:8px 0;border-left:4px solid ${CATC[it.cat]}">
-    <b>${it.date} · ${CATL[it.cat] || it.cat}${it.mode ? " · " + (MODEL[it.mode] || it.mode) : ""}${it.country ? " · " + ((C.find(x=>x.id===it.country)||{}).name||"") : ""}</b>
-    <p>${it.place} ${it.note?`<span class="meta">— ${it.note}</span>`:""}</p>
-    <p>${fmt(it.usd)}</p>
-    <button type="button" class="btn s" data-del="${it.id}">Remove</button>
-  </div>`).join("") || `<p class="meta">Nothing saved yet. Add a stay, a bus, a meal or an attraction.</p>`;
-  $$("#diaryList [data-del]").forEach(b => b.onclick = () => {
-    state.diary = diaryItems().filter(x => x.id !== b.dataset.del);
-    save(); renderDiary();
-  });
-  const usd = items.reduce((s,it) => s + (+it.usd||0), 0);
-  const by = {};
-  items.forEach(it => { by[it.cat] = (by[it.cat]||0) + (+it.usd||0); });
-  const budUsd = state.tripBudgetUsd || 0;
-  const left = budUsd - usd;
-  sum.innerHTML = `<b>Spent ${fmt(usd)}</b><p class="meta">${Object.keys(CATL).map(k => `${CATL[k]} ${fmt(by[k]||0)}`).join(" · ")}</p>`;
-  const rb = $("#remainBox");
-  if (rb) {
-    rb.style.background = left < 0 ? "#fdecec" : "#e9f7ef";
-    rb.innerHTML = budUsd
-      ? `<b>Trip budget ${fmt(budUsd)}</b><p>Spent ${fmt(usd)} · <b>Remaining ${fmt(left)}</b></p><p class="meta">Stays ${fmt(by.stay||0)} · Flights ${fmt(by.flight||0)} · Bikes ${fmt(by.moto||0)} · Travel ${fmt(by.travel||0)} · Food ${fmt(by.food||0)} · Attractions ${fmt(by.see||0)}</p>`
-      : `<p>Set a trip budget above to see what is left after stays, travel and food.</p>`;
-  }
-  const split = $("#spendSplit");
-  if (split) {
-    split.innerHTML = Object.keys(CATL).map(k => `<div class="stat"><span>${CATL[k]}</span><b>${fmt(by[k]||0)}</b><span class="meta">${items.filter(it => it.cat===k).length} lines</span></div>`).join("");
-  }
-  if ($("#tripBudget") && document.activeElement !== $("#tripBudget") && budUsd) $("#tripBudget").value = Math.round(toCur(budUsd));
-}
-function fillDiaryCountries() {
-  const sel = $("#dCountry");
-  if (!sel || sel.dataset.ready) return;
-  sel.append(new Option("Any / not set", ""));
-  C.forEach(c => sel.append(new Option(c.flag + " " + c.name, c.id)));
-  sel.dataset.ready = "1";
-}
-function matchNear(place) {
-  const q = (place || "").toLowerCase();
-  return NEAR.find(n => q.includes(n.name.toLowerCase()) || n.name.toLowerCase().split(" ")[0].length > 3 && q.includes(n.name.toLowerCase().split(" ")[0].toLowerCase()));
-}
-function showStayNear(place) {
-  const box = $("#stayNear");
-  if (!box) return;
-  const n = matchNear(place);
-  if (!n) { box.innerHTML = `<p class="meta">No city match for “${place}”. Try Bangkok, Chiang Mai, Ubud, Hanoi…</p>`; return; }
-  const cow = `https://www.happycow.net/searchmap?s=${encodeURIComponent(n.name)}`;
-  box.innerHTML = `<h3>Near ${n.name}</h3>
-    <div class="scout-grid">
-      <div class="rec-card"><h3>Eat</h3><ul class="clean">${n.food.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn p" href="${cow}" target="_blank" rel="noopener">HappyCow</a></div>
-      <div class="rec-card"><h3>Shop</h3><p class="meta">Markets and gear near ${n.name}.</p><a class="btn s" href="${klookSearch(n.name,"market")}" target="_blank" rel="noopener">Klook markets</a> <a class="btn s" href="https://maps.apple.com/?q=${mapQuery("market "+n.name)}" target="_blank" rel="noopener">Maps</a></div>
-      <div class="rec-card"><h3>Bike rental</h3><p class="meta">Scooter shops around ${n.name}. Check licence and insurance.</p><a class="btn s" href="https://maps.apple.com/?q=${mapQuery("motorbike rental "+n.name)}" target="_blank" rel="noopener">Apple Maps</a> <a class="btn s" href="${klookSearch(n.name,"scooter")}" target="_blank" rel="noopener">Klook scooter</a></div>
-      <div class="rec-card"><h3>Nature</h3><ul class="clean">${n.nature.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn s" href="${klookSearch(n.name,"nature")}" target="_blank" rel="noopener">Klook nature</a></div>
-      <div class="rec-card"><h3>Attractions</h3><ul class="clean">${n.see.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn s" href="${klookSearch(n.name,"things to do")}" target="_blank" rel="noopener">Klook tickets</a></div>
-    </div>`;
-}
-const saveBud = $("#saveBudget");
-if (saveBud) saveBud.onclick = () => {
-  const raw = +$("#tripBudget").value || 0;
-  state.tripBudgetUsd = raw / (rate(curCode()) || 1);
-  save(); renderDiary();
-};
-const diaryForm = $("#diaryForm");
-function addDiaryLine() {
-  fillDiaryCountries();
-  const place = ($("#dPlace").value || "").trim();
-  if (!place) { const n = $("#diaryStayNote"); if (n) n.textContent = "Type the place or flight first."; return; }
-  const cur = curCode();
-  const raw = +$("#dCost").value || 0;
-  const usd = raw / (rate(cur) || 1);
-  const country = $("#dCountry") ? $("#dCountry").value : "";
-  const cname = (C.find(x => x.id === country) || {}).name || "";
-  diaryItems().push({
-    id: Date.now().toString(36),
-    date: $("#dDate").value || new Date().toISOString().slice(0,10),
-    cat: $("#dCat").value,
-    mode: $("#dCat").value === "travel" ? $("#dMode").value : "",
-    country, place, note: $("#dNote").value || "", usd
-  });
-  save();
-  const added = place;
-  const cat = $("#dCat").value;
-  $("#dPlace").value = "";
-  $("#dCost").value = "0";
-  const note = $("#diaryStayNote");
-  if (note) note.textContent = "Added " + added + ". Still on this page — add the next one.";
-  renderDiary();
-  if (cat === "stay") showStayNear(cname ? cname + " " + added : added);
   $("#dPlace").focus();
 }
-if (diaryForm) diaryForm.addEventListener("submit", e => { e.preventDefault(); addDiaryLine(); });
-const addBtn = $("#addDiaryBtn");
-if (addBtn) addBtn.onclick = e => { e.preventDefault(); addDiaryLine(); };
-$$("#diaryChips [data-dcat]").forEach(b => b.onclick = () => {
-  diaryFilter = b.dataset.dcat;
-  $$("#diaryChips .chip").forEach(x => x.classList.remove("on"));
-  b.classList.add("on");
-  renderDiary();
-});
-function syncMode() {
-  const wrap = $("#dModeWrap");
-  if (wrap) wrap.style.display = ($("#dCat") && $("#dCat").value === "travel") ? "" : "none";
+function renderCards(){
+  const q = ($("#q").value||"").toLowerCase();
+  $("#cards").innerHTML = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).map(c=>`<button class="box" type="button" data-c="${c.id}"><b>${c.flag} ${c.name}</b><span class="meta">~${money(c.budget)}/day</span></button>`).join("");
+  $$("[data-c]").forEach(b=>b.onclick=()=>openC(b.dataset.c));
 }
-if ($("#dCat")) { $("#dCat").addEventListener("change", syncMode); syncMode(); }
-
-(function themeInit(){
-  const saved = localStorage.getItem("lotuslane_theme") || "day";
-  document.documentElement.dataset.theme = saved === "night" ? "night" : "";
-  const btn = $("#themeBtn");
-  if (btn) {
-    btn.textContent = saved === "night" ? "☀️" : "☾";
-    btn.onclick = () => {
-      const night = document.documentElement.dataset.theme === "night";
-      document.documentElement.dataset.theme = night ? "" : "night";
-      localStorage.setItem("lotuslane_theme", night ? "day" : "night");
-      btn.textContent = night ? "☾" : "☀️";
-    };
+function openC(id){
+  const c = COUNTRIES.find(x=>x.id===id);
+  const box = $("#country"); box.style.display="block";
+  const links = Object.entries(c.links).map(([k,u])=>`<a class="btn" href="${u}" target="_blank">${k}</a>`).join(" ");
+  box.innerHTML = `<h3>${c.flag} ${c.name}</h3><p>${c.visa}</p><p class="meta">${c.vegan}</p><p>${links}</p><button class="btn" type="button" id="useC">Use in trip</button>`;
+  $("#useC").onclick=()=>{ $("#dCountry").value=id; go("plan"); };
+}
+function scout(){
+  const f=$("#from").value||"LON", t=$("#to").value||"BKK", d=$("#when").value||"";
+  const g=`https://www.google.com/travel/flights?q=flights%20from%20${encodeURIComponent(f)}%20to%20${encodeURIComponent(t)}%20on%20${d}`;
+  $("#scoutLinks").innerHTML = `<a class="btn" href="${g}" target="_blank">Google Flights</a>
+    <a class="btn s" href="https://www.kayak.com/flights" target="_blank">Kayak</a>
+    <a class="btn s" href="https://12go.asia/en" target="_blank">12Go trains & buses</a>
+    <a class="btn s" href="https://www.agoda.com/search?city=${encodeURIComponent(t)}" target="_blank">Agoda rooms</a>`;
+}
+function renderPlay(){
+  const tabs=$("#playTabs");
+  if(!tabs.dataset.ready){
+    COUNTRIES.slice(0,8).forEach((c,i)=>tabs.insertAdjacentHTML("beforeend", `<button class="chip ${i?"":"on"}" data-p="${c.id}">${c.flag}</button>`));
+    tabs.dataset.ready="1";
+    tabs.onclick=e=>{ const b=e.target.closest("[data-p]"); if(!b)return; $$("#playTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); showPlay(b.dataset.p); };
   }
-})();
-
-renderPack();
-renderSeasons();
-pushBudgetInputs();
-renderBudget();
-renderFxBoard();
-renderFly();
-recommendNow();
-renderSights();
-renderPlay();
-loadRates();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
-(function iphoneAppMode(){
-  const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-  if (standalone) document.body.classList.add("standalone");
-  const sheet = document.getElementById("installSheet");
-  if (sheet) sheet.remove();
-  const hint = document.getElementById("installHint");
-  if (hint) hint.remove();
-})();
+  showPlay("th");
+}
+function showPlay(id){
+  const p=PLACES[id]||{}; const c=COUNTRIES.find(x=>x.id===id);
+  $("#playOut").innerHTML = `<div class="box"><h3>${c.flag} ${c.name}</h3>
+    <p><b>Beaches</b> ${(p.beach||["City break"]).join(", ")}</p>
+    <p><b>Nature</b> ${(p.nature||[]).join(", ")}</p>
+    <p><b>Attractions</b> ${(p.see||[]).join(", ")}</p>
+    <p><b>Food</b> ${(p.food||[]).join(", ")}</p></div>`;
+}
+function renderVisa(){
+  $("#visaOut").innerHTML = COUNTRIES.map(c=>`<div class="box" style="margin:8px 0"><b>${c.flag} ${c.name}</b><p>${c.visa}</p>${Object.entries(c.links).map(([k,u])=>`<a href="${u}" target="_blank">${k}</a>`).join(" · ")}</div>`).join("");
+}
+$("#saveBudget").onclick=()=>{ state.tripBudgetUsd=(+$("#tripBudget").value||0)/rate(state.cur); save(); renderPlan(); };
+$("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
+$("#q").addEventListener("input", renderCards);
+["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
+async function rates(){
+  try{
+    const r=await fetch("https://api.frankfurter.app/latest?from=USD");
+    const j=await r.json();
+    FX={...FX,...j.rates,USD:1};
+    renderPlan();
+  }catch(e){}
+}
+fill(); rates(); renderCards(); scout();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
