@@ -80,7 +80,8 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
   <div class="box" style="margin-top:12px">
     <h3>Add a booking</h3>
     <div class="form">
-      <div><label>Date</label><input id="dDate" type="date"/></div>
+      <div><label>Arrive / start</label><input id="dFrom" type="date"/></div>
+      <div><label>Leave / end</label><input id="dTo" type="date"/></div>
       <div><label>Country</label><select id="dCountry"></select></div>
       <div><label>Category</label>
         <select id="dCat">
@@ -126,8 +127,22 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
 
 <section id="play" class="panel">
   <h2>Places</h2>
-  <div class="tabs" id="playTabs"></div>
+  <input id="placeQ" placeholder="Type a city — Bangkok, Ubud, Hanoi"/>
+  <button class="btn" type="button" id="placeBtn" style="margin-top:8px">Show lists</button>
+  <button class="btn s" type="button" id="locBtn" style="margin-top:8px">Show my location</button>
+  <div id="mapBox" class="box" style="margin-top:10px;display:none"></div>
   <div id="playOut"></div>
+  <div class="box" style="margin-top:12px">
+    <h3>My restaurants & shops</h3>
+    <p class="meta">Saved on this phone. They stay until you delete them.</p>
+    <div class="form">
+      <div><label>Name</label><input id="savedName" placeholder="Jay stall, Chatuchak"/></div>
+      <div><label>Kind</label><select id="savedKind"><option value="restaurant">Restaurant</option><option value="shop">Shop</option></select></div>
+      <div><label>City</label><input id="savedCity" placeholder="Chiang Mai"/></div>
+    </div>
+    <button class="btn" type="button" id="savePlace">Save</button>
+    <div id="savedList"></div>
+  </div>
 </section>
 
 <section id="visa" class="panel">
@@ -204,9 +219,13 @@ function fill(){
   cur.value = state.cur; cur.onchange = () => { state.cur=cur.value; save(); renderPlan(); };
   const dc = $("#dCountry");
   COUNTRIES.forEach(c=>dc.append(new Option(c.flag+" "+c.name,c.id)));
-  $("#dDate").value = new Date().toISOString().slice(0,10);
+  $("#dFrom").value = new Date().toISOString().slice(0,10);
+  $("#dTo").value = new Date(Date.now()+3*86400000).toISOString().slice(0,10);
   $("#when").value = new Date(Date.now()+21*86400000).toISOString().slice(0,10);
-  $("#dCat").onchange = () => { $("#modeWrap").style.display = $("#dCat").value==="travel"?"":"none"; };
+  $("#dCat").onchange = () => {
+    const c = $("#dCat").value;
+    $("#modeWrap").style.display = c==="travel" ? "" : "none";
+  };
   $("#dCat").dispatchEvent(new Event("change"));
 }
 function renderPlan(){
@@ -219,38 +238,47 @@ function renderPlan(){
   if(document.activeElement!==$("#tripBudget") && bud) $("#tripBudget").value = Math.round(bud*rate(state.cur));
   $("#split").innerHTML = Object.keys(CATS).map(k=>{
     const n = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0);
-    return `<div class="box"><span class="meta">${CATS[k][0]}</span><b>${money(n)}</b></div>`;
+    return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(n)}</b></div>`;
   }).join("");
-  $("#list").innerHTML = items.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(it=>{
+  $("#list").innerHTML = items.slice().sort((a,b)=>(a.from||a.date||"").localeCompare(b.from||b.date||"")).map(it=>{
     const c = COUNTRIES.find(x=>x.id===it.country);
-    return `<div class="box line" style="border-color:${CATS[it.cat][1]}"><b>${it.date} · ${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b><p>${it.place}</p><p>${money(it.usd)}</p><button class="btn s" type="button" data-del="${it.id}">Remove</button></div>`;
+    const col = CATS[it.cat][1];
+    return `<div class="box" data-card="${it.id}" style="margin:8px 0;border-left:8px solid ${col};background:linear-gradient(90deg,${col}22,#fffdf9 28%)">
+      <b style="color:${col}">${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b>
+      <div class="form">
+        <div><label>Place</label><input data-f="place" value="${it.place.replace(/"/g,""")}"/></div>
+        <div><label>Cost (${state.cur})</label><input data-f="cost" type="number" value="${Math.round((it.usd||0)*rate(state.cur))}"/></div>
+        <div><label>Start</label><input data-f="from" type="date" value="${it.from||it.date||""}"/></div>
+        <div><label>End</label><input data-f="to" type="date" value="${it.to||it.from||it.date||""}"/></div>
+      </div>
+      <button class="btn" type="button" data-save="${it.id}">Save edit</button>
+      <button class="btn s" type="button" data-del="${it.id}" style="margin-top:6px">Remove</button>
+    </div>`;
   }).join("") || `<p class="meta">No bookings yet.</p>`;
   $$("[data-del]").forEach(b=>b.onclick=()=>{ state.diary=state.diary.filter(x=>x.id!==b.dataset.del); save(); renderPlan(); });
+  $$("[data-save]").forEach(b=>b.onclick=()=>{
+    const card = b.closest("[data-card]");
+    const it = state.diary.find(x=>x.id===b.dataset.save);
+    if(!it) return;
+    it.place = card.querySelector("[data-f=place]").value;
+    it.usd = (+card.querySelector("[data-f=cost]").value||0) / rate(state.cur);
+    it.from = card.querySelector("[data-f=from]").value;
+    it.to = card.querySelector("[data-f=to]").value;
+    it.date = it.from;
+    save(); renderPlan();
+  });
 }
 function addLine(){
   const place = $("#dPlace").value.trim();
   if(!place){ $("#note").textContent="Type the place or flight first."; return; }
   const usd = (+$("#dCost").value||0) / rate(state.cur);
   const country = $("#dCountry").value;
-  state.diary.push({id:Date.now().toString(36), date:$("#dDate").value, cat:$("#dCat").value, mode:$("#dCat").value==="travel"?$("#dMode").value:"", country, place, usd});
+  state.diary.push({id:Date.now().toString(36), date:$("#dFrom").value, from:$("#dFrom").value, to:$("#dTo").value, cat:$("#dCat").value, mode:$("#dCat").value==="travel"?$("#dMode").value:"", country, place, usd});
   save();
   $("#note").textContent = "Added "+place+". Still on this page.";
   $("#dPlace").value=""; $("#dCost").value="0";
   renderPlan();
-  if($("#dCat").value==="stay"){
-    const name = (COUNTRIES.find(c=>c.id===country)||{}).name||place;
-    const p = PLACES[country]||{food:["Search HappyCow"],nature:["Day trip parks"],see:["Old town"],shop:["Local market"],bike:["Scooter shops — check licence"]};
-    $("#near").innerHTML = `<div class="box"><h3>Near ${name}</h3>
-      <p><b>Eat</b> ${(p.food||[]).join(" · ")}</p>
-      <p><b>Shop</b> ${(p.shop||[]).join(" · ")}</p>
-      <p><b>Bike hire</b> ${(p.bike||[]).join(" · ")}</p>
-      <p><b>Nature</b> ${(p.nature||[]).join(" · ")}</p>
-      <p><b>Attractions</b> ${(p.see||[]).join(" · ")}</p>
-      <a class="btn" href="https://www.happycow.net/searchmap?s=${encodeURIComponent(name)}" target="_blank">HappyCow</a>
-      <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent(name)}" target="_blank">Apple Maps</a>
-      <a class="btn s" href="https://www.klook.com/en-GB/search/result/?query=${encodeURIComponent(name)}" target="_blank">Klook</a>
-    </div>`;
-  }
+  showPlaceLists((COUNTRIES.find(c=>c.id===country)||{}).name || place);
   $("#dPlace").focus();
 }
 function renderCards(){
@@ -273,23 +301,55 @@ function scout(){
     <a class="btn s" href="https://12go.asia/en" target="_blank">12Go trains & buses</a>
     <a class="btn s" href="https://www.agoda.com/search?city=${encodeURIComponent(t)}" target="_blank">Agoda rooms</a>`;
 }
-function renderPlay(){
-  const tabs=$("#playTabs");
-  if(!tabs.dataset.ready){
-    COUNTRIES.slice(0,8).forEach((c,i)=>tabs.insertAdjacentHTML("beforeend", `<button class="chip ${i?"":"on"}" data-p="${c.id}">${c.flag}</button>`));
-    tabs.dataset.ready="1";
-    tabs.onclick=e=>{ const b=e.target.closest("[data-p]"); if(!b)return; $$("#playTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); showPlay(b.dataset.p); };
-  }
-  showPlay("th");
+function showPlaceLists(q){
+  const query = (q||$("#placeQ").value||"Bangkok").trim();
+  const hit = COUNTRIES.find(c => query.toLowerCase().includes(c.name.toLowerCase()));
+  const id = hit ? hit.id : "th";
+  const p = PLACES[id] || {};
+  const enc = encodeURIComponent(query);
+  const apps = [
+    ["HappyCow vegan", `https://www.happycow.net/searchmap?s=${enc}`],
+    ["Google Maps", `https://www.google.com/maps/search/?api=1&query=${enc}`],
+    ["Apple Maps", `https://maps.apple.com/?q=${enc}`],
+    ["Klook", `https://www.klook.com/en-GB/search/result/?query=${enc}`],
+    ["Tripadvisor", `https://www.tripadvisor.com/Search?q=${enc}`],
+    ["Guru Maps", `https://gurumaps.app/`]
+  ];
+  $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${query}</h3>
+    <p><b>Beaches</b> ${(p.beach||["Search Maps for beaches near "+query]).join(" · ")}</p>
+    <p><b>Vegan food</b> ${(p.food||["HappyCow for "+query]).join(" · ")}</p>
+    <p><b>Markets</b> ${(p.shop||["Local market"]).join(" · ")}</p>
+    <p><b>Attractions</b> ${(p.see||["Old town"]).join(" · ")}</p>
+    <p><b>Tourist info</b> Visitor centre / TAT office in ${query}. Search Maps for “tourist information”.</p>
+    <div style="margin-top:8px">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}</div>
+  </div>`;
+  $("#near").innerHTML = $("#playOut").innerHTML;
 }
-function showPlay(id){
-  const p=PLACES[id]||{}; const c=COUNTRIES.find(x=>x.id===id);
-  $("#playOut").innerHTML = `<div class="box"><h3>${c.flag} ${c.name}</h3>
-    <p><b>Beaches</b> ${(p.beach||["City break"]).join(", ")}</p>
-    <p><b>Nature</b> ${(p.nature||[]).join(", ")}</p>
-    <p><b>Attractions</b> ${(p.see||[]).join(", ")}</p>
-    <p><b>Food</b> ${(p.food||[]).join(", ")}</p></div>`;
+function renderSaved(){
+  state.saved = state.saved || [];
+  $("#savedList").innerHTML = state.saved.map(s=>`<div class="box" style="margin-top:8px"><b>${s.kind==="shop"?"Shop":"Restaurant"} · ${s.city}</b><p>${s.name}</p><button class="btn s" type="button" data-sd="${s.id}">Delete</button></div>`).join("") || `<p class="meta">None saved yet.</p>`;
+  $$("[data-sd]").forEach(b=>b.onclick=()=>{ state.saved=state.saved.filter(x=>x.id!==b.dataset.sd); save(); renderSaved(); });
 }
+function renderPlay(){ showPlaceLists($("#placeQ").value); renderSaved(); }
+$("#placeBtn").onclick = () => showPlaceLists($("#placeQ").value);
+$("#locBtn").onclick = () => {
+  const box = $("#mapBox");
+  box.style.display = "block";
+  box.textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    box.innerHTML = `<b>You are here</b><p class="meta">${lat.toFixed(4)}, ${lon.toFixed(4)}</p>
+      <a class="btn" href="https://maps.apple.com/?ll=${lat},${lon}&q=My%20location" target="_blank">Apple Maps</a>
+      <a class="btn s" href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">Google Maps</a>`;
+  }, () => { box.textContent = "Location blocked. Allow location for Safari, then try again."; });
+};
+$("#savePlace").onclick = () => {
+  const name = $("#savedName").value.trim();
+  if(!name) return;
+  state.saved = state.saved || [];
+  state.saved.push({id:Date.now().toString(36), name, kind:$("#savedKind").value, city:$("#savedCity").value});
+  save(); $("#savedName").value=""; renderSaved();
+};
 function renderVisa(){
   $("#visaOut").innerHTML = COUNTRIES.map(c=>`<div class="box" style="margin:8px 0"><b>${c.flag} ${c.name}</b><p>${c.visa}</p>${Object.entries(c.links).map(([k,u])=>`<a href="${u}" target="_blank">${k}</a>`).join(" · ")}</div>`).join("");
 }
