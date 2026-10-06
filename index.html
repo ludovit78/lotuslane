@@ -23,7 +23,12 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop
 .panel{display:none;padding:16px 0 24px;animation:rise .25s ease}
 .panel.on{display:block}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card,.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:0 12px 30px rgba(20,36,28,.06)}
+.card,.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:0 16px 36px rgba(20,36,28,.07)}
+h1{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.08;margin:6px 0 8px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.duo{grid-template-columns:1fr}}
+.tone{border-radius:18px;padding:14px;color:#fff}
+.tone b{display:block;font-size:1.25rem;margin-top:4px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 @media(max-width:640px){.form{grid-template-columns:1fr}}
@@ -92,6 +97,7 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
           <option value="travel">Travel</option>
           <option value="food">Food</option>
           <option value="see">Attraction</option>
+          <option value="visa">Visa extension</option>
         </select>
       </div>
       <div id="modeWrap"><label>Travel type</label>
@@ -112,6 +118,7 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
     <button class="chip" type="button" data-view="food">Food</button>
     <button class="chip" type="button" data-view="moto">Bikes</button>
     <button class="chip" type="button" data-view="see">Attractions</button>
+    <button class="chip" type="button" data-view="visa">Visa extension</button>
   </div>
   <div id="split" class="grid"></div>
   <div id="list"></div>
@@ -173,7 +180,7 @@ document.addEventListener("submit", e => e.preventDefault(), true);
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const CUR = [["GBP","£","United Kingdom"],["EUR","€","Slovakia / euro"],["USD","$","United States"],["THB","฿","Thailand"],["VND","₫","Vietnam"],["IDR","Rp","Indonesia"],["MYR","RM","Malaysia"],["PHP","₱","Philippines"],["SGD","S$","Singapore"],["INR","₹","India"],["JPY","¥","Japan"],["KRW","₩","Korea"]];
-const CATS = {stay:["Accommodation","#0e8f9a"],flight:["Flight","#1a6b52"],moto:["Motorcycle","#7c4a03"],travel:["Travel","#3b5bdb"],food:["Food","#e09a2b"],see:["Attraction","#e25d72"]};
+const CATS = {stay:["Accommodation","#0e8f9a"],flight:["Flight","#1a6b52"],moto:["Motorcycle","#b45309"],travel:["Travel","#3b5bdb"],food:["Food","#c45c16"],see:["Attraction","#e25d72"],visa:["Visa extension","#6d28d9"]};
 const COUNTRIES = [
   {id:"th",name:"Thailand",flag:"🇹🇭",visa:"30 days visa-exempt for many passports since 15 Sep 2026. Longer: e-visa or DTV.", vegan:"Jay (เจ) stalls, Chiang Mai and Bangkok.", budget:40, links:{apply:"https://www.thaievisa.go.th/",ext:"https://www.immigration.go.th/",card:"https://tdac.immigration.go.th/"}},
   {id:"vn",name:"Vietnam",flag:"🇻🇳",visa:"90-day e-visa is the simple long option for many, including Slovak.", vegan:"Chay canteens, especially HCMC.", budget:32, links:{apply:"https://evisa.gov.vn/e-visa/foreigners/",ext:"https://evisa.gov.vn/"}},
@@ -259,15 +266,15 @@ function renderPlan(){
   Object.keys(CATS).forEach(k => by[k] = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0));
   const flight = by.flight || 0;
   const ground = spent - flight;
-  const per = ground / days;
+  const perGround = ground / days;
+  const perAll = spent / days;
   $("#remain").className = left<0?"bad":"ok";
-  $("#remain").innerHTML = `<b>Trip total ${money(spent)}</b> · on the ground ${money(per)} / day · ${days} days`
-    + `<p class="meta">Days run from the first stay or journey until you are back in the UK. Flight tickets are in the total only, not in the daily figure.</p>`
-    + (bud ? `<p>Budget ${money(bud)} · Remaining ${money(left)}</p>` : "");
-  $("#results").innerHTML = `<b>Results</b>
-    <p>Stays ${money(by.stay||0)} · Travel ${money(by.travel||0)} · Food ${money(by.food||0)}</p>
-    <p>Bikes ${money(by.moto||0)} · Attractions ${money(by.see||0)} · Flights ${money(flight)} (total, not daily)</p>
-    <p><b>Total ${money(spent)}</b> · <b>${money(per)} per day on the ground</b></p>`;
+  $("#remain").innerHTML = `<div class="duo">
+    <div class="tone" style="background:linear-gradient(135deg,#0c6b4f,#0e8f9a)"><span>With flights</span><b>${money(spent)}</b><span>${money(perAll)} / day</span></div>
+    <div class="tone" style="background:linear-gradient(135deg,#b45309,#e09a2b)"><span>Without flights</span><b>${money(ground)}</b><span>${money(perGround)} / day</span></div>
+  </div><p class="meta" style="margin-top:8px">${days} days, first stay until back in the UK. ${bud?`Budget ${money(bud)} · remaining ${money(left)}`:""}</p>`;
+  $("#results").innerHTML = `<b>Category totals</b>
+    <p>Stays ${money(by.stay||0)} · Travel ${money(by.travel||0)} · Food ${money(by.food||0)} · Bikes ${money(by.moto||0)} · Attractions ${money(by.see||0)} · Visa extension ${money(by.visa||0)} · Flights ${money(flight)}</p>`;
   if(document.activeElement!==$("#tripBudget") && bud) $("#tripBudget").value = Math.round(bud*rate(state.cur));
   $("#split").innerHTML = Object.keys(CATS).filter(k => view==="all" || view===k).map(k=>{
     return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(by[k]||0)}</b><span class="meta">${k==="flight"?"trip total only":money((by[k]||0)/days)+" / day"}</span></div>`;
@@ -276,15 +283,15 @@ function renderPlan(){
   $("#list").innerHTML = shown.slice().sort((a,b)=>(a.from||a.date||"").localeCompare(b.from||b.date||"")).map(it=>{
     const c = COUNTRIES.find(x=>x.id===it.country);
     const col = CATS[it.cat][1];
-    return `<div class="box" data-card="${it.id}" style="margin:8px 0;border-left:8px solid ${col}">
-      <b style="color:${col}">${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b>
+    return `<div class="box" data-card="${it.id}" style="margin:10px 0;border:0;background:${col};color:#fff">
+      <b>${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b>
       <div class="form">
-        <div><label>Place</label><input data-f="place" value="${esc(it.place)}"/></div>
-        <div><label>Cost (${state.cur})</label><input data-f="cost" type="number" value="${Math.round((it.usd||0)*rate(state.cur))}"/></div>
-        <div><label>Start</label><input data-f="from" type="date" value="${it.from||it.date||""}"/></div>
-        <div><label>End</label><input data-f="to" type="date" value="${it.to||it.from||it.date||""}"/></div>
+        <div><label style="color:#fff">Place</label><input data-f="place" value="${esc(it.place)}"/></div>
+        <div><label style="color:#fff">Cost (${state.cur})</label><input data-f="cost" type="number" value="${Math.round((it.usd||0)*rate(state.cur))}"/></div>
+        <div><label style="color:#fff">Start</label><input data-f="from" type="date" value="${it.from||it.date||""}"/></div>
+        <div><label style="color:#fff">End</label><input data-f="to" type="date" value="${it.to||it.from||it.date||""}"/></div>
       </div>
-      <button class="btn" type="button" data-save="${it.id}">Save edit</button>
+      <button class="btn s" type="button" data-save="${it.id}">Save edit</button>
       <button class="btn s" type="button" data-del="${it.id}" style="margin-top:6px">Remove</button>
     </div>`;
   }).join("") || `<p class="meta">Nothing in this category yet.</p>`;
@@ -312,6 +319,16 @@ function addLine(){
   $("#dPlace").value=""; $("#dCost").value="0";
   renderPlan();
   showPlaceLists((COUNTRIES.find(c=>c.id===country)||{}).name || place);
+  if(country==="vn"){
+    const city = place || "Ho Chi Minh City";
+    const q = encodeURIComponent("ACB ATM "+city+" Vietnam");
+    const bank = encodeURIComponent("ACB bank "+city+" Vietnam");
+    $("#near").innerHTML += `<div class="box" style="margin-top:10px;background:#0b3b6e;color:#fff"><h3>ACB near ${esc(city)}</h3>
+      <p>Asia Commercial Bank branches and ATMs. Opens Maps for the ones nearest this stay. Confirm cash and card fees on the machine.</p>
+      <a class="btn s" href="https://maps.apple.com/?q=${q}" target="_blank">ACB ATMs</a>
+      <a class="btn s" href="https://www.google.com/maps/search/?api=1&query=${bank}" target="_blank">ACB branches</a>
+      <a class="btn s" href="https://www.acb.com.vn/" target="_blank">ACB official</a></div>`;
+  }
   $("#dPlace").focus();
 }
 function renderCards(){
