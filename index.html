@@ -82,6 +82,7 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
     <div class="form">
       <div><label>Arrive / start</label><input id="dFrom" type="date"/></div>
       <div><label>Leave / end</label><input id="dTo" type="date"/></div>
+      <div><label>Back home in the UK</label><input id="homeDate" type="date"/></div>
       <div><label>Country</label><select id="dCountry"></select></div>
       <div><label>Category</label>
         <select id="dCat">
@@ -241,10 +242,12 @@ function fill(){
 function esc(s){ const amp=String.fromCharCode(38), q=String.fromCharCode(34), lt=String.fromCharCode(60); return String(s||"").split(amp).join(amp+"amp;").split(q).join(amp+"quot;").split(lt).join(amp+"lt;"); }
 let view = "all";
 function tripDays(){
-  const dates = state.diary.flatMap(i => [i.from, i.to, i.date].filter(Boolean)).sort();
-  if(dates.length < 2) return Math.max(1, state.diary.length);
-  const a = new Date(dates[0]), b = new Date(dates[dates.length-1]);
-  return Math.max(1, Math.round((b-a)/86400000)+1);
+  const ground = state.diary.filter(i => i.cat !== "flight");
+  const starts = ground.map(i => i.from || i.date).filter(Boolean).sort();
+  const start = starts[0];
+  const end = state.homeDate || ground.map(i => i.to || i.from || i.date).filter(Boolean).sort().slice(-1)[0] || start;
+  if(!start || !end) return 1;
+  return Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
 }
 function renderPlan(){
   const items = state.diary;
@@ -254,16 +257,20 @@ function renderPlan(){
   const left = bud-spent;
   const by = {};
   Object.keys(CATS).forEach(k => by[k] = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0));
+  const flight = by.flight || 0;
+  const ground = spent - flight;
+  const per = ground / days;
   $("#remain").className = left<0?"bad":"ok";
-  $("#remain").innerHTML = `<b>Total ${money(spent)}</b> · ${money(spent/days)} / day · ${days} days`
+  $("#remain").innerHTML = `<b>Trip total ${money(spent)}</b> · on the ground ${money(per)} / day · ${days} days`
+    + `<p class="meta">Days run from the first stay or journey until you are back in the UK. Flight tickets are in the total only, not in the daily figure.</p>`
     + (bud ? `<p>Budget ${money(bud)} · Remaining ${money(left)}</p>` : "");
   $("#results").innerHTML = `<b>Results</b>
-    <p>Stays ${money(by.stay||0)} · Flights ${money(by.flight||0)} · Travel ${money(by.travel||0)} · Food ${money(by.food||0)}</p>
-    <p>Bikes ${money(by.moto||0)} · Attractions ${money(by.see||0)}</p>
-    <p><b>Total ${money(spent)}</b> · <b>${money(spent/days)} per day</b></p>`;
+    <p>Stays ${money(by.stay||0)} · Travel ${money(by.travel||0)} · Food ${money(by.food||0)}</p>
+    <p>Bikes ${money(by.moto||0)} · Attractions ${money(by.see||0)} · Flights ${money(flight)} (total, not daily)</p>
+    <p><b>Total ${money(spent)}</b> · <b>${money(per)} per day on the ground</b></p>`;
   if(document.activeElement!==$("#tripBudget") && bud) $("#tripBudget").value = Math.round(bud*rate(state.cur));
   $("#split").innerHTML = Object.keys(CATS).filter(k => view==="all" || view===k).map(k=>{
-    return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(by[k]||0)}</b><span class="meta">${money((by[k]||0)/days)} / day</span></div>`;
+    return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(by[k]||0)}</b><span class="meta">${k==="flight"?"trip total only":money((by[k]||0)/days)+" / day"}</span></div>`;
   }).join("");
   const shown = items.filter(i => view==="all" || i.cat===view);
   $("#list").innerHTML = shown.slice().sort((a,b)=>(a.from||a.date||"").localeCompare(b.from||b.date||"")).map(it=>{
@@ -310,13 +317,13 @@ function addLine(){
 function renderCards(){
   const q = ($("#q").value||"").toLowerCase();
   $("#cards").innerHTML = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).map(c=>{
-    const stay = c.budget*0.45, food = c.budget*0.25, travel = c.budget*0.15, flight = 18;
-    const day = stay+food+travel+flight;
+    const stay = c.budget*0.55, food = c.budget*0.28, travel = c.budget*0.17;
+    const day = stay+food+travel;
     return `<button class="box" type="button" data-c="${c.id}" style="text-align:left">
       <b>${c.flag} ${c.name}</b>
-      <span class="meta" style="display:block">Stay ${money(stay)} · Food ${money(food)}</span>
-      <span class="meta" style="display:block">Travel ${money(travel)} · Flight share ${money(flight)}</span>
-      <b>${money(day)} / day</b>
+      <span class="meta" style="display:block">Stay ${money(stay)} · Food ${money(food)} · Travel ${money(travel)}</span>
+      <b>${money(day)} / day on the ground</b>
+      <span class="meta" style="display:block">Flights are extra, counted once in the trip total</span>
     </button>`;
   }).join("");
   $$("[data-c]").forEach(b=>b.onclick=()=>openC(b.dataset.c));
@@ -388,7 +395,9 @@ $("#savePlace").onclick = () => {
 function renderVisa(){
   $("#visaOut").innerHTML = COUNTRIES.map(c=>`<div class="box" style="margin:8px 0"><b>${c.flag} ${c.name}</b><p>${c.visa}</p>${Object.entries(c.links).map(([k,u])=>`<a href="${u}" target="_blank">${k}</a>`).join(" · ")}</div>`).join("");
 }
-$("#saveBudget").onclick=()=>{ state.tripBudgetUsd=(+$("#tripBudget").value||0)/rate(state.cur); save(); renderPlan(); };
+$("#saveBudget").onclick=()=>{ state.tripBudgetUsd=(+$("#tripBudget").value||0)/rate(state.cur); state.homeDate=$("#homeDate").value; save(); renderPlan(); };
+$("#homeDate").onchange=()=>{ state.homeDate=$("#homeDate").value; save(); renderPlan(); };
+if(state.homeDate) $("#homeDate").value = state.homeDate;
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
 $$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
