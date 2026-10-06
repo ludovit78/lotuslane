@@ -102,7 +102,17 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
     <button class="btn" type="button" id="addBtn">Add to trip</button>
     <p class="meta" id="note" style="margin-top:8px">You stay on this page. Add as many rooms and flights as you want.</p>
   </div>
-  <div id="split" class="grid" style="margin-top:12px"></div>
+  <div id="results" class="ok" style="margin-top:12px">Add a booking to see totals.</div>
+  <div class="tabs" id="viewTabs">
+    <button class="chip on" type="button" data-view="all">All</button>
+    <button class="chip" type="button" data-view="stay">Stays</button>
+    <button class="chip" type="button" data-view="flight">Flights</button>
+    <button class="chip" type="button" data-view="travel">Travel</button>
+    <button class="chip" type="button" data-view="food">Food</button>
+    <button class="chip" type="button" data-view="moto">Bikes</button>
+    <button class="chip" type="button" data-view="see">Attractions</button>
+  </div>
+  <div id="split" class="grid"></div>
   <div id="list"></div>
   <div id="near" style="margin-top:12px"></div>
 </section>
@@ -228,25 +238,41 @@ function fill(){
   };
   $("#dCat").dispatchEvent(new Event("change"));
 }
+function esc(s){ const amp=String.fromCharCode(38), q=String.fromCharCode(34), lt=String.fromCharCode(60); return String(s||"").split(amp).join(amp+"amp;").split(q).join(amp+"quot;").split(lt).join(amp+"lt;"); }
+let view = "all";
+function tripDays(){
+  const dates = state.diary.flatMap(i => [i.from, i.to, i.date].filter(Boolean)).sort();
+  if(dates.length < 2) return Math.max(1, state.diary.length);
+  const a = new Date(dates[0]), b = new Date(dates[dates.length-1]);
+  return Math.max(1, Math.round((b-a)/86400000)+1);
+}
 function renderPlan(){
   const items = state.diary;
   const spent = items.reduce((s,i)=>s+(+i.usd||0),0);
+  const days = tripDays();
   const bud = state.tripBudgetUsd||0;
   const left = bud-spent;
+  const by = {};
+  Object.keys(CATS).forEach(k => by[k] = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0));
   $("#remain").className = left<0?"bad":"ok";
-  $("#remain").innerHTML = bud ? `<b>Budget ${money(bud)}</b><p>Spent ${money(spent)} · Remaining ${money(left)}</p>` : "Save a trip budget to see what is left.";
+  $("#remain").innerHTML = `<b>Total ${money(spent)}</b> · ${money(spent/days)} / day · ${days} days`
+    + (bud ? `<p>Budget ${money(bud)} · Remaining ${money(left)}</p>` : "");
+  $("#results").innerHTML = `<b>Results</b>
+    <p>Stays ${money(by.stay||0)} · Flights ${money(by.flight||0)} · Travel ${money(by.travel||0)} · Food ${money(by.food||0)}</p>
+    <p>Bikes ${money(by.moto||0)} · Attractions ${money(by.see||0)}</p>
+    <p><b>Total ${money(spent)}</b> · <b>${money(spent/days)} per day</b></p>`;
   if(document.activeElement!==$("#tripBudget") && bud) $("#tripBudget").value = Math.round(bud*rate(state.cur));
-  $("#split").innerHTML = Object.keys(CATS).map(k=>{
-    const n = items.filter(i=>i.cat===k).reduce((s,i)=>s+(+i.usd||0),0);
-    return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(n)}</b></div>`;
+  $("#split").innerHTML = Object.keys(CATS).filter(k => view==="all" || view===k).map(k=>{
+    return `<div class="box" style="border-top:6px solid ${CATS[k][1]}"><span class="meta">${CATS[k][0]}</span><b>${money(by[k]||0)}</b><span class="meta">${money((by[k]||0)/days)} / day</span></div>`;
   }).join("");
-  $("#list").innerHTML = items.slice().sort((a,b)=>(a.from||a.date||"").localeCompare(b.from||b.date||"")).map(it=>{
+  const shown = items.filter(i => view==="all" || i.cat===view);
+  $("#list").innerHTML = shown.slice().sort((a,b)=>(a.from||a.date||"").localeCompare(b.from||b.date||"")).map(it=>{
     const c = COUNTRIES.find(x=>x.id===it.country);
     const col = CATS[it.cat][1];
-    return `<div class="box" data-card="${it.id}" style="margin:8px 0;border-left:8px solid ${col};background:linear-gradient(90deg,${col}22,#fffdf9 28%)">
+    return `<div class="box" data-card="${it.id}" style="margin:8px 0;border-left:8px solid ${col}">
       <b style="color:${col}">${CATS[it.cat][0]}${it.mode?" · "+it.mode:""} · ${c?c.name:""}</b>
       <div class="form">
-        <div><label>Place</label><input data-f="place" value="${it.place.replace(/"/g,""")}"/></div>
+        <div><label>Place</label><input data-f="place" value="${esc(it.place)}"/></div>
         <div><label>Cost (${state.cur})</label><input data-f="cost" type="number" value="${Math.round((it.usd||0)*rate(state.cur))}"/></div>
         <div><label>Start</label><input data-f="from" type="date" value="${it.from||it.date||""}"/></div>
         <div><label>End</label><input data-f="to" type="date" value="${it.to||it.from||it.date||""}"/></div>
@@ -254,7 +280,7 @@ function renderPlan(){
       <button class="btn" type="button" data-save="${it.id}">Save edit</button>
       <button class="btn s" type="button" data-del="${it.id}" style="margin-top:6px">Remove</button>
     </div>`;
-  }).join("") || `<p class="meta">No bookings yet.</p>`;
+  }).join("") || `<p class="meta">Nothing in this category yet.</p>`;
   $$("[data-del]").forEach(b=>b.onclick=()=>{ state.diary=state.diary.filter(x=>x.id!==b.dataset.del); save(); renderPlan(); });
   $$("[data-save]").forEach(b=>b.onclick=()=>{
     const card = b.closest("[data-card]");
@@ -283,7 +309,16 @@ function addLine(){
 }
 function renderCards(){
   const q = ($("#q").value||"").toLowerCase();
-  $("#cards").innerHTML = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).map(c=>`<button class="box" type="button" data-c="${c.id}"><b>${c.flag} ${c.name}</b><span class="meta">~${money(c.budget)}/day</span></button>`).join("");
+  $("#cards").innerHTML = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).map(c=>{
+    const stay = c.budget*0.45, food = c.budget*0.25, travel = c.budget*0.15, flight = 18;
+    const day = stay+food+travel+flight;
+    return `<button class="box" type="button" data-c="${c.id}" style="text-align:left">
+      <b>${c.flag} ${c.name}</b>
+      <span class="meta" style="display:block">Stay ${money(stay)} · Food ${money(food)}</span>
+      <span class="meta" style="display:block">Travel ${money(travel)} · Flight share ${money(flight)}</span>
+      <b>${money(day)} / day</b>
+    </button>`;
+  }).join("");
   $$("[data-c]").forEach(b=>b.onclick=()=>openC(b.dataset.c));
 }
 function openC(id){
@@ -355,6 +390,7 @@ function renderVisa(){
 }
 $("#saveBudget").onclick=()=>{ state.tripBudgetUsd=(+$("#tripBudget").value||0)/rate(state.cur); save(); renderPlan(); };
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
+$$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
 ["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
 async function rates(){
