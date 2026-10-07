@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="theme-color" content="#f6efe4"/>
 <title>LotusLane</title>
-<link rel="manifest" href="manifest.json"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -138,7 +138,10 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
 </section>
 
 <section id="map" class="panel">
-  <h2>Countries</h2>
+  <h2>Map</h2>
+  <p class="meta">Green pins are countries. Pink pins are your stays. Blue is you.</p>
+  <div id="leaflet" style="height:420px;border-radius:18px;border:1px solid var(--line);margin:8px 0"></div>
+  <button class="btn" type="button" id="mapMe">Show my location</button>
   <input id="q" placeholder="Search Thailand, Vietnam…" style="margin:8px 0"/>
   <div id="cards" class="grid"></div>
   <div id="country" class="box" style="margin-top:12px;display:none"></div>
@@ -196,6 +199,7 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
   <button type="button" data-go="scout"><span>✈</span>Scout</button>
   <button type="button" data-go="play"><span>🏝️</span>Places</button>
 </nav>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener("submit", e => e.preventDefault(), true);
 const $ = s => document.querySelector(s);
@@ -248,7 +252,7 @@ function go(id){
   $("#"+id).classList.add("on");
   $$("nav.bar button").forEach(b=>b.classList.toggle("on", b.dataset.go===id));
   if(id==="plan") renderPlan();
-  if(id==="map") renderCards();
+  if(id==="map"){ renderCards(); renderMap(); }
   if(id==="play") renderPlay();
   if(id==="visa") renderVisa();
   if(id==="scout") scout();
@@ -377,6 +381,30 @@ function addLine(){
   }
   $("#dPlace").focus();
 }
+let map, stayLayer;
+const GEO = {th:[13.75,100.5],vn:[16.05,108.2],kh:[11.55,104.92],la:[17.97,102.6],id:[-8.65,115.22],my:[3.14,101.69],sg:[1.35,103.82],ph:[14.6,120.98],jp:[35.68,139.69],kr:[37.57,126.98],tw:[25.03,121.56],in:[28.61,77.21],np:[27.72,85.32],lk:[6.93,79.85],ge:[41.69,44.8]};
+const CITY = {Hanoi:[21.03,105.85],Sapa:[22.34,103.84],"Ho Chi Minh City":[10.78,106.7],Hue:[16.46,107.59],"Da Nang":[16.05,108.2],"Hoi An":[15.88,108.33],"Vung Tau":[10.35,107.08],"Ninh Binh":[20.25,105.97],Bangkok:[13.75,100.5],"Chiang Mai":[18.79,98.98],Ubud:[-8.51,115.26]};
+function renderMap(){
+  if(typeof L === "undefined") return;
+  if(!map){
+    map = L.map("leaflet").setView([15,105], 4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {attribution:"© OpenStreetMap"}).addTo(map);
+    COUNTRIES.forEach(c => {
+      const g = GEO[c.id];
+      if(!g) return;
+      L.circleMarker(g, {radius:8, color:"#0c6b4f", fillColor:"#0e8f9a", fillOpacity:.9}).addTo(map).bindPopup(c.flag+" "+c.name);
+    });
+    stayLayer = L.layerGroup().addTo(map);
+  }
+  stayLayer.clearLayers();
+  state.diary.filter(i => i.cat==="stay").forEach(i => {
+    const hit = Object.keys(CITY).find(k => (i.place||"").toLowerCase().includes(k.toLowerCase().split(" ")[0]));
+    const g = hit ? CITY[hit] : GEO[i.country];
+    if(!g) return;
+    L.marker(g).addTo(stayLayer).bindPopup(i.place+" · "+(i.from||""));
+  });
+  setTimeout(() => map.invalidateSize(), 200);
+}
 function renderCards(){
   const q = ($("#q").value||"").toLowerCase();
   $("#cards").innerHTML = COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).map(c=>{
@@ -386,7 +414,6 @@ function renderCards(){
       <b>${c.flag} ${c.name}</b>
       <span class="meta" style="display:block">Stay ${money(stay)} · Food ${money(food)} · Travel ${money(travel)}</span>
       <b>${money(day)} / day on the ground</b>
-      <span class="meta" style="display:block">Flights are extra, counted once in the trip total</span>
     </button>`;
   }).join("");
   $$("[data-c]").forEach(b=>b.onclick=()=>openC(b.dataset.c));
@@ -501,6 +528,14 @@ if(state.homeDate) $("#homeDate").value = state.homeDate;
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
 $$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
+$("#mapMe").onclick = () => {
+  renderMap();
+  navigator.geolocation.getCurrentPosition(pos => {
+    const ll = [pos.coords.latitude, pos.coords.longitude];
+    L.circleMarker(ll, {radius:10, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1}).addTo(map).bindPopup("You are here");
+    map.setView(ll, 13);
+  }, () => alert("Allow location, then try again."));
+};
 ["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
 async function rates(){
   try{
