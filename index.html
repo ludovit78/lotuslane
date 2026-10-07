@@ -166,13 +166,12 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
   <div id="mapBox" class="box" style="margin-top:10px;display:none"></div>
   <div id="playOut"></div>
   <div class="box" style="margin-top:12px">
-    <h3>Currency calculator</h3>
-    <p class="meta">Live rates for every country in the app. Type an amount in the currency you are holding.</p>
-    <div class="form">
-      <div><label>Amount</label><input id="calcAmt" type="number" value="100000"/></div>
-      <div><label>This is</label><select id="calcFrom"></select></div>
-    </div>
-    <div id="calcOut" class="grid"></div>
+    <h3>Currency</h3>
+    <p class="meta">Two taps. First currency is the amount. Second is the result.</p>
+    <div class="tabs" id="curTabs"></div>
+    <label>Amount</label>
+    <input id="calcAmt" type="number" value="100000"/>
+    <div id="calcOut" class="box" style="margin-top:10px;background:#0c6b4f;color:#fff"></div>
   </div>
   <div class="box" style="margin-top:12px">
     <h3>My restaurants & shops</h3>
@@ -481,22 +480,29 @@ function showPlaceLists(q){
   }
   renderCalc();
 }
+const CUR = [["GBP","£","United Kingdom","🇬🇧"],["EUR","€","Euro","🇪🇺"],["USD","$","United States","🇺🇸"],["THB","฿","Thailand","🇹🇭"],["VND","₫","Vietnam","🇻🇳"],["IDR","Rp","Indonesia","🇮🇩"],["MYR","RM","Malaysia","🇲🇾"],["PHP","₱","Philippines","🇵🇭"],["SGD","S$","Singapore","🇸🇬"],["INR","₹","India","🇮🇳"],["JPY","¥","Japan","🇯🇵"],["KRW","₩","Korea","🇰🇷"]];
+let calcFrom = "VND", calcTo = "GBP", calcPick = "from";
 function renderCalc(){
-  const from = $("#calcFrom");
-  if(from && !from.dataset.ready){
-    CUR.forEach(([c,s,land])=>from.append(new Option(s+" "+c+" · "+land, c)));
-    from.value = state.cur; from.dataset.ready="1";
-    from.onchange = renderCalc;
+  const tabs = $("#curTabs");
+  if(tabs && !tabs.dataset.ready){
+    tabs.innerHTML = CUR.map(([c,s,land,flag])=>`<button class="chip" type="button" data-cur="${c}" style="display:flex;flex-direction:column;align-items:center;min-width:72px"><span style="font-size:1.3rem">${flag}</span><span>${land}</span></button>`).join("");
+    tabs.dataset.ready = "1";
+    tabs.onclick = e => {
+      const b = e.target.closest("[data-cur]");
+      if(!b) return;
+      if(calcPick === "from") { calcFrom = b.dataset.cur; calcPick = "to"; }
+      else { calcTo = b.dataset.cur; calcPick = "from"; }
+      renderCalc();
+    };
     $("#calcAmt").addEventListener("input", renderCalc);
   }
+  $$("#curTabs .chip").forEach(b => b.classList.toggle("on", b.dataset.cur===calcFrom || b.dataset.cur===calcTo));
   const raw = +($("#calcAmt")&&$("#calcAmt").value)||0;
-  const code = (from&&from.value)||state.cur;
-  const usd = raw / (rate(code)||1);
-  $("#calcOut").innerHTML = CUR.map(([c,s,land])=>{
-    const n = usd*(rate(c)||1);
-    const shown = (c==="VND"||c==="IDR"||c==="KRW") ? Math.round(n).toLocaleString() : n.toFixed(2);
-    return `<div class="box"><span class="meta">${land}</span><b>${s}${shown}</b><span class="meta">${c}</span></div>`;
-  }).join("");
+  const usd = raw / (rate(calcFrom)||1);
+  const out = usd * (rate(calcTo)||1);
+  const a = CUR.find(x=>x[0]===calcFrom), b = CUR.find(x=>x[0]===calcTo);
+  const shown = (calcTo==="VND"||calcTo==="IDR"||calcTo==="KRW") ? Math.round(out).toLocaleString() : out.toFixed(2);
+  $("#calcOut").innerHTML = `<span>${a[3]} ${a[2]} · ${a[1]}${raw.toLocaleString()}</span><b style="display:block;font-size:1.6rem;margin-top:4px">${b[3]} ${b[2]} · ${b[1]}${shown}</b><span class="meta" style="color:#d1fae5">Next tap sets ${calcPick==="from"?"the amount currency":"the result"}</span>`;
 }
 function renderSaved(){
   state.saved = state.saved || [];
@@ -565,7 +571,7 @@ async function rates(){
     const r=await fetch("https://api.frankfurter.app/latest?from=USD");
     const j=await r.json();
     FX={...FX,...j.rates,USD:1};
-    renderPlan();
+    renderPlan(); renderCalc();
   }catch(e){}
 }
 fill(); rates(); renderCards(); scout();
