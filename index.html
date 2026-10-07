@@ -368,7 +368,8 @@ function addLine(){
   $("#note").textContent = "Added "+place+". Still on this page.";
   $("#dPlace").value=""; $("#dCost").value="0";
   renderPlan();
-  showPlaceLists((COUNTRIES.find(c=>c.id===country)||{}).name || place);
+  renderMap();
+  showPlaceLists(place);
   if(country==="vn"){
     const city = place || "Ho Chi Minh City";
     const q = encodeURIComponent("ACB ATM "+city+" Vietnam");
@@ -384,6 +385,16 @@ function addLine(){
 let map, stayLayer;
 const GEO = {th:[13.75,100.5],vn:[16.05,108.2],kh:[11.55,104.92],la:[17.97,102.6],id:[-8.65,115.22],my:[3.14,101.69],sg:[1.35,103.82],ph:[14.6,120.98],jp:[35.68,139.69],kr:[37.57,126.98],tw:[25.03,121.56],in:[28.61,77.21],np:[27.72,85.32],lk:[6.93,79.85],ge:[41.69,44.8]};
 const CITY = {Hanoi:[21.03,105.85],Sapa:[22.34,103.84],"Ho Chi Minh City":[10.78,106.7],Hue:[16.46,107.59],"Da Nang":[16.05,108.2],"Hoi An":[15.88,108.33],"Vung Tau":[10.35,107.08],"Ninh Binh":[20.25,105.97],Bangkok:[13.75,100.5],"Chiang Mai":[18.79,98.98],Ubud:[-8.51,115.26]};
+function matchCity(text){
+  const q = (text||"").toLowerCase();
+  if(q.includes("hcmc") || q.includes("saigon") || q.includes("sai gon")) return "Ho Chi Minh City";
+  if(q.includes("hoi an") || q.includes("hoian")) return "Hoi An";
+  if(q.includes("tam coc") || q.includes("ninh binh")) return "Ninh Binh";
+  if(q.includes("da nang") || q.includes("danang")) return "Da Nang";
+  if(q.includes("vung tau")) return "Vung Tau";
+  const keys = Object.keys(CITY).concat(Object.keys(VN)).sort((a,b)=>b.length-a.length);
+  return keys.find(k => q.includes(k.toLowerCase())) || "";
+}
 function renderMap(){
   if(typeof L === "undefined") return;
   if(!map){
@@ -398,10 +409,16 @@ function renderMap(){
   }
   stayLayer.clearLayers();
   state.diary.filter(i => i.cat==="stay").forEach(i => {
-    const hit = Object.keys(CITY).find(k => (i.place||"").toLowerCase().includes(k.toLowerCase().split(" ")[0]));
-    const g = hit ? CITY[hit] : GEO[i.country];
+    const hit = matchCity(i.place) || matchCity((COUNTRIES.find(c=>c.id===i.country)||{}).name);
+    const g = CITY[hit] || GEO[i.country];
     if(!g) return;
-    L.marker(g).addTo(stayLayer).bindPopup(i.place+" · "+(i.from||""));
+    const city = hit || i.place;
+    const guide = VN[hit];
+    const food = guide ? guide.vegan[0] : "vegan food";
+    const see = guide ? guide.info : "tourist attractions";
+    L.marker(g).addTo(stayLayer).bindPopup(`<b>${i.place}</b><br>Stay<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("hotels near "+city)}" target="_blank">Rooms</a> · <a href="https://www.happycow.net/searchmap?s=${encodeURIComponent(city)}" target="_blank">Vegan</a> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("tourist attraction "+city)}" target="_blank">Attractions</a>`);
+    L.circleMarker([g[0]+0.02, g[1]+0.02], {radius:6, color:"#c45c16", fillColor:"#e09a2b", fillOpacity:.9}).addTo(stayLayer).bindPopup("Food near "+city+": "+food);
+    L.circleMarker([g[0]-0.02, g[1]+0.02], {radius:6, color:"#e25d72", fillColor:"#e25d72", fillOpacity:.9}).addTo(stayLayer).bindPopup("Sights near "+city+": "+see);
   });
   setTimeout(() => map.invalidateSize(), 200);
 }
@@ -435,7 +452,7 @@ function scout(){
 }
 function showPlaceLists(q){
   const query = (q||$("#placeQ").value||"Hanoi").trim();
-  const vn = Object.keys(VN).find(k => query.toLowerCase().includes(k.toLowerCase().split(" ")[0].toLowerCase()) || k.toLowerCase().includes(query.toLowerCase()));
+  const vn = matchCity(query);
   const enc = encodeURIComponent(query);
   const apps = [
     ["HappyCow", `https://www.happycow.net/searchmap?s=${enc}`],
@@ -528,14 +545,20 @@ if(state.homeDate) $("#homeDate").value = state.homeDate;
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
 $$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
-$("#mapMe").onclick = () => {
+let meMarker, watchId;
+function followMe(){
   renderMap();
-  navigator.geolocation.getCurrentPosition(pos => {
+  if(!navigator.geolocation) return;
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(pos => {
     const ll = [pos.coords.latitude, pos.coords.longitude];
-    L.circleMarker(ll, {radius:10, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1}).addTo(map).bindPopup("You are here");
-    map.setView(ll, 13);
-  }, () => alert("Allow location, then try again."));
-};
+    if(!meMarker) meMarker = L.circleMarker(ll, {radius:10, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1}).addTo(map).bindPopup("You are here");
+    else meMarker.setLatLng(ll);
+    map.setView(ll, 14);
+  }, () => {}, {enableHighAccuracy:true, maximumAge:5000});
+}
+$("#mapMe").onclick = followMe;
+$("#locBtn").onclick = followMe;
 ["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
 async function rates(){
   try{
