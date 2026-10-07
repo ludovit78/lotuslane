@@ -30,8 +30,12 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop
 .box b,.box p,.meta{overflow-wrap:anywhere}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .form{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0}
-.chip{border:1px solid var(--line);background:#fff;border-radius:14px;padding:6px 8px;font-weight:700;cursor:pointer;font-size:.78rem;line-height:1.15}
-.hero-img{width:100%;height:168px;object-fit:cover;border-radius:18px;display:block;margin:8px 0 12px}
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 10px;font-weight:700;cursor:pointer;font-size:.78rem;line-height:1.2;position:static;max-width:100%}
+.chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;align-items:stretch}
+.tabs .chip{flex:1 1 92px}
+.hero-img{width:100%;height:180px;object-fit:cover;border-radius:18px;display:block;margin:8px 0 12px;background:#0e8f9a}
+.logo{width:42px;height:42px;border-radius:12px;object-fit:cover;display:block}
 h1{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.08;margin:6px 0 8px}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:640px){.duo{grid-template-columns:1fr}}
@@ -44,9 +48,7 @@ label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:upper
 input,select{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .btn{border:0;border-radius:12px;padding:12px 14px;font-weight:700;background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;cursor:pointer;width:100%}
 .btn.s{background:#efe6d6;color:var(--ink)}
-.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:700;cursor:pointer}
-.chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .stat b{display:block;font-size:1.2rem}
 .ok{background:#e9f7ef;border:1px solid #b7e0c8;border-radius:14px;padding:12px;margin:8px 0}
 .bad{background:#fdecec;border:1px solid #f2b6b6;border-radius:14px;padding:12px;margin:8px 0}
@@ -71,10 +73,10 @@ nav.bar button.on{color:var(--lotus)}
 </style>
 </head>
 <body>
-<header><div class="wrap brand"><img src="lotus.jpg" alt="" class="logo" style="object-fit:cover"/><div>LotusLane<small class="meta" style="display:block">Asia planner</small></div></div></header>
+<header><div class="wrap brand"><img src="./lotus.jpg" alt="LotusLane" class="logo"/><div>LotusLane<small class="meta" style="display:block">Asia planner</small></div></div></header>
 <main class="wrap">
 <section id="home" class="panel on">
-  <img class="hero-img" src="hero.jpg" alt="Lotus on a quiet river"/>
+  <img class="hero-img" src="./hero.jpg" alt="Lotus on a quiet river"/>
   <p class="kicker">Budget · vegan · official visas</p>
   <h1>Plan the trip. Stay on the page.</h1>
   <p class="meta">Add countries, stays, flights and costs. Nothing reloads. Prices open Google Flights, 12Go, Agoda and Klook.</p>
@@ -500,7 +502,7 @@ let calcFrom = "VND", calcTo = "GBP", calcPick = "from";
 function renderCalc(){
   const tabs = $("#curTabs");
   if(tabs && !tabs.dataset.ready){
-    tabs.innerHTML = CUR.map(([c,s,land,flag])=>`<button class="chip" type="button" data-cur="${c}" style="display:flex;flex-direction:column;align-items:center;min-width:72px"><span style="font-size:1.3rem">${flag}</span><span>${land}</span></button>`).join("");
+    tabs.innerHTML = CUR.map(([c,s,land,flag])=>`<button class="chip" type="button" data-cur="${c}">${flag}<br>${land}</button>`).join("");
     tabs.dataset.ready = "1";
     tabs.onclick = e => {
       const b = e.target.closest("[data-cur]");
