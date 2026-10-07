@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#14241c"/>
+<title>Read · LotusLane</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<style>
+:root{--ink:#14241c;--muted:#5d6e66;--green:#0c6b4f;--teal:#0e8f9a;--bg:#f6efe4;--card:#fffdf9;--line:#e6d7c2}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:#f6efe4;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select{font:inherit;font-size:16px}
+button{cursor:pointer}
+.app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column}
+.top{padding:max(10px,env(safe-area-inset-top)) 14px 8px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-family:Georgia,"Iowan Old Style",serif;font-size:1.25rem;letter-spacing:-.02em}
+.brand a{color:#f6efe4;text-decoration:none}
+.brand small{display:block;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b7c7be}
+.langs{display:grid;grid-template-columns:1fr 44px 1fr;gap:8px;align-items:center;margin-top:10px}
+select{width:100%;background:#1e3329;color:#f6efe4;border:1px solid #345246;border-radius:12px;padding:10px;min-height:44px}
+.swap,.ghost,.go{border:0;border-radius:999px;min-height:44px}
+.swap{width:44px;height:44px;background:#efe6d6;color:var(--ink);font-weight:800}
+.hint{margin-top:8px;display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:#b7c7be}
+.stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#0c1612}
+video,img.shot{width:100%;height:100%;object-fit:cover}
+img.shot{object-fit:contain;background:#0c1612}
+.sample{height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px}
+.sample p{color:#b7c7be;font-size:.92rem;text-align:center}
+.sample h2{font-family:Georgia,serif;text-align:center;font-size:2rem;margin:12px 0}
+.card{background:var(--card);color:var(--ink);border-radius:16px;border-left:4px solid var(--green);padding:12px 14px;text-align:left}
+.card .src{color:var(--muted);font-size:.85rem}
+.card .out{font-weight:750;font-size:1.05rem;margin-top:4px}
+.sheet{position:absolute;left:12px;right:12px;bottom:12px;max-height:46%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.sheet button{width:100%}
+.pin{position:absolute;width:14rem;z-index:2}
+.wait{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,36,28,.78);text-align:center;padding:24px}
+.status{min-height:28px;text-align:center;font-size:.85rem;color:#b7c7be;padding:8px 14px}
+.err{margin:0 14px;background:#e25d72;color:#fff;border-radius:14px;padding:10px 12px;font-size:.88rem}
+.dock{display:flex;gap:8px;align-items:center;padding:8px 14px calc(12px + env(safe-area-inset-bottom))}
+.ghost,.go{flex:1;font-weight:750;padding:0 12px}
+.ghost{background:#efe6d6;color:var(--ink)}
+.go{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff}
+.hold{width:64px;height:64px;border-radius:999px;border:0;background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;font-weight:800;flex:none}
+.frame{position:absolute;inset:22px;pointer-events:none}
+.frame i{position:absolute;width:22px;height:22px;border:2px solid #f6efe4}
+.frame i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}
+.frame i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.frame i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}
+.frame i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="row">
+      <div class="brand"><a href="index.html">LotusLane</a><small>Read a sign</small></div>
+      <button type="button" class="ghost" id="speak" style="flex:none;padding:0 14px">Speak</button>
+    </div>
+    <div class="langs">
+      <select id="from" aria-label="Language on the page"></select>
+      <button type="button" class="swap" id="swap" aria-label="Swap languages">⇄</button>
+      <select id="to" aria-label="Language you read"></select>
+    </div>
+    <div class="hint"><span id="hint">Camera reads the page language</span><span id="net">Online</span></div>
+  </header>
+  <div class="stage" id="stage">
+    <div class="sample" id="sample">
+      <p id="sampleNote">Sample, until the camera is on</p>
+      <h2>Phở bò tái</h2>
+      <div class="card"><div class="src">Phở bò tái</div><div class="out">Rare beef pho</div></div>
+      <p style="margin-top:14px">Hold a menu or a sign steady. Words translate as they settle. The first language download takes a moment.</p>
+    </div>
+  </div>
+  <p class="status" id="status">Point at words</p>
+  <p class="err" id="error" hidden></p>
+  <div class="dock">
+    <button type="button" class="ghost" id="photo">Photo</button>
+    <button type="button" class="go" id="open">Open camera</button>
+    <button type="button" class="ghost" id="flip" hidden>Flip</button>
+  </div>
+  <p class="sr" id="live" aria-live="polite"></p>
+  <input id="file" class="sr" type="file" accept="image/*"/>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const LANGS = [
+  {id:"en", name:"English", tess:"eng", say:"en-US"},
+  {id:"vi", name:"Tiếng Việt", tess:"vie", say:"vi-VN"},
+  {id:"th", name:"ไทย", tess:"tha", say:"th-TH"},
+  {id:"id", name:"Indonesia", tess:"ind", say:"id-ID"},
+  {id:"ms", name:"Melayu", tess:"msa", say:"ms-MY"},
+  {id:"km", name:"ខ្មែរ", tess:"khm", say:"km-KH"},
+  {id:"lo", name:"ລາວ", tess:"lao", say:"lo-LA"},
+  {id:"zh", name:"中文", tess:"chi_sim", say:"zh-CN"},
+  {id:"ja", name:"日本語", tess:"jpn", say:"ja-JP"},
+  {id:"ko", name:"한국어", tess:"kor", say:"ko-KR"},
+  {id:"sk", name:"Slovenčina", tess:"slk", say:"sk-SK"}
+];
+const $ = id => document.getElementById(id);
+const fromEl = $("from");
+const toEl = $("to");
+const stage = $("stage");
+const statusEl = $("status");
+const errorEl = $("error");
+const openBtn = $("open");
+const flipBtn = $("flip");
+LANGS.forEach(l => {
+  fromEl.add(new Option(l.name, l.id));
+  toEl.add(new Option(l.name, l.id));
+});
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem("lotuslane.lens") || "{}"); } catch (e) {}
+fromEl.value = LANGS.some(l => l.id === saved.from) ? saved.from : "vi";
+toEl.value = LANGS.some(l => l.id === saved.to) ? saved.to : "en";
+if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
+
+const cache = new Map();
+let worker = null;
+let workerCode = "";
+let queue = Promise.resolve();
+let stream = null;
+let facing = "environment";
+let wanted = false;
+let frozen = false;
+let stillUrl = "";
+let video = null;
+let loopOn = false;
+let stable = "";
+let pending = "";
+let misses = 0;
+let pass = 0;
+let lastNet = 0;
+let fail = {norm:"", at:0};
+let spoken = "Rare beef pho";
+
+function lang(id){ return LANGS.find(l => l.id === id); }
+function saveDir(){
+  localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value}));
+  $("hint").textContent = "Camera reads " + lang(fromEl.value).name;
+}
+saveDir();
+function setStatus(t){ statusEl.textContent = t; }
+function setError(t){
+  if (!t) { errorEl.hidden = true; errorEl.textContent = ""; return; }
+  errorEl.hidden = false;
+  errorEl.textContent = t;
+}
+function norm(s){
+  return s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+}
+function similar(a, b){
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const left = a.split(" ");
+  const right = new Set(b.split(" "));
+  let n = 0;
+  for (const w of left) if (right.has(w)) n++;
+  return n / Math.max(left.length, right.size, 1);
+}
+function enqueue(fn){
+  const run = queue.then(fn, fn);
+  queue = run.then(() => {}, () => {});
+  return run;
+}
+function decode(s){
+  return s.replace(/"/g, '"').replace(/&#39;|'/g, "'").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
+}
+async function translateText(text){
+  const from = fromEl.value;
+  const to = toEl.value;
+  const key = from + ">" + to + ":" + norm(text);
+  if (cache.has(key)) return cache.get(key);
+  const q = text.slice(0, 450);
+  const pair = id => id === "zh" ? "zh-CN" : id;
+  let out = "";
+  try {
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(q) + "&langpair=" + pair(from) + "|" + pair(to);
+    const res = await fetch(url);
+    const json = await res.json();
+    const raw = json.responseData && json.responseData.translatedText;
+    if (!raw || /MYMEMORY WARNING|QUERY LENGTH/i.test(raw)) throw new Error("memory");
+    out = decode(raw);
+  } catch (e) {
+    const url = new URL("https://translate.googleapis.com/translate_a/single");
+    url.searchParams.set("client", "gtx");
+    url.searchParams.set("sl", pair(from));
+    url.searchParams.set("tl", pair(to));
+    url.searchParams.set("dt", "t");
+    url.searchParams.set("q", q);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Couldn't translate that. Try again in a moment.");
+    const json = await res.json();
+    out = (json[0] || []).map(seg => (Array.isArray(seg) ? seg[0] : "")).join("");
+    if (!out.trim()) throw new Error("Couldn't translate that.");
+  }
+  cache.set(key, out.trim());
+  return out.trim();
+}
+async function reader(){
+  const code = lang(fromEl.value).tess;
+  if (worker && workerCode === code) return worker;
+  return enqueue(async () => {
+    if (worker && workerCode === code) return worker;
+    if (worker) { const old = worker; worker = null; old.terminate().catch(() => {}); }
+    workerCode = code;
+    setStatus("Downloading reader…");
+    worker = await Tesseract.createWorker(code, 1, {
+      logger(m){
+        if (typeof m.progress === "number" && m.status && m.status.indexOf("recogniz") === -1) {
+          setStatus("Downloading reader " + Math.round(m.progress * 100) + "%");
+        }
+      }
+    });
+    try {
+      await worker.setParameters({ tessedit_pageseg_mode: "11", preserve_interword_spaces: "1" });
+    } catch (e) {}
+    return worker;
+  });
+}
+function usable(t){
+  const m = t.match(/\p{L}|\p{N}/gu);
+  return !!(m && m.length >= 2);
+}
+function linesFrom(data, w, h){
+  const rows = [];
+  for (const line of data.lines || []) {
+    const text = (line.text || "").replace(/\s+/g, " ").trim();
+    if (!usable(text)) continue;
+    const c = typeof line.confidence === "number" ? line.confidence : 80;
+    if (c >= 0 && c < 45) continue;
+    const b = line.bbox;
+    if (!b) continue;
+    rows.push({ text, x:b.x0 / w, y:b.y0 / h, w:Math.max(0.02, (b.x1 - b.x0) / w), h:Math.max(0.02, (b.y1 - b.y0) / h) });
+  }
+  if (rows.length) return rows.slice(0, 8);
+  return (data.text || "").split(/\n+/).map(t => t.trim()).filter(usable).slice(0, 8).map((text, i) => ({
+    text, x:0.08, y:0.15 + i * 0.08, w:0.8, h:0.06
+  }));
+}
+function grab(el){
+  if (!el.videoWidth) return null;
+  const box = stage.getBoundingClientRect();
+  if (box.width < 8 || box.height < 8) return null;
+  const aspect = box.width / box.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = box.width >= box.height ? 960 : Math.max(1, Math.round(960 * aspect));
+  canvas.height = box.width >= box.height ? Math.max(1, Math.round(960 / aspect)) : 960;
+  const ctx = canvas.getContext("2d", { willReadFrequently:true });
+  const va = el.videoWidth / el.videoHeight;
+  let sx = 0, sy = 0, sw = el.videoWidth, sh = el.videoHeight;
+  if (va > aspect) { sw = el.videoHeight * aspect; sx = (el.videoWidth - sw) / 2; }
+  else { sh = el.videoWidth / aspect; sy = (el.videoHeight - sh) / 2; }
+  ctx.drawImage(el, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+function clearSheet(){
+  stage.querySelectorAll(".sheet,.pin").forEach(n => n.remove());
+}
+function showRows(lines, translated, block){
+  clearSheet();
+  spoken = block || (translated || []).filter(Boolean).join(". ") || lines.map(l => l.text).join(". ");
+  $("live").textContent = spoken;
+  const place = !block && lines.length > 0 && lines.length <= 3 && lines.every((l, i) => lines.findIndex(o => Math.abs(o.y - l.y) < 0.16 && o !== l) === -1);
+  if (place && translated) {
+    lines.forEach((line, i) => {
+      const below = line.y + line.h < 0.7;
+      const pin = document.createElement("button");
+      pin.type = "button";
+      pin.className = "pin card";
+      pin.style.left = Math.min(Math.max(line.x * 100, 4), 42) + "%";
+      pin.style.top = ((below ? line.y + line.h : line.y) * 100) + "%";
+      if (!below) pin.style.transform = "translateY(-100%)";
+      pin.innerHTML = '<div class="src"></div><div class="out"></div>';
+      pin.querySelector(".src").textContent = line.text;
+      pin.querySelector(".out").textContent = translated[i] || "…";
+      pin.onclick = () => copy(translated[i] || line.text);
+      stage.appendChild(pin);
+    });
+    return;
+  }
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  if (block) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "card";
+    btn.innerHTML = '<div class="src"></div><div class="out"></div>';
+    btn.querySelector(".src").textContent = lines.map(l => l.text).join("\n");
+    btn.querySelector(".out").textContent = block;
+    btn.onclick = () => copy(block);
+    sheet.appendChild(btn);
+  } else {
+    lines.forEach((line, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "card";
+      btn.innerHTML = '<div class="src"></div><div class="out"></div>';
+      btn.querySelector(".src").textContent = line.text;
+      btn.querySelector(".out").textContent = (translated && translated[i]) || "…";
+      btn.onclick = () => copy((translated && translated[i]) || line.text);
+      sheet.appendChild(btn);
+    });
+  }
+  stage.appendChild(sheet);
+}
+async function copy(text){
+  try { await navigator.clipboard.writeText(text); setStatus("Copied"); }
+  catch (e) { setError("Couldn't copy. Select the words instead."); }
+}
+function pair(sources, translated){
+  const parts = translated.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (sources.length === 1) return [translated.trim()];
+  if (parts.length === sources.length) return parts;
+  return null;
+}
+async function consume(lines, live){
+  const text = lines.map(l => l.text).join(" ");
+  const n = norm(text);
+  if (n.length < 2) {
+    if (++misses >= 4) {
+      stable = ""; pending = ""; pass++;
+      clearSheet();
+      spoken = "";
+      setStatus(live ? "Point at words" : "No words in that photo");
+    }
+    return;
+  }
+  misses = 0;
+  if (similar(n, stable) >= 0.78) { setStatus(live ? "Live" : "Photo"); return; }
+  const agreed = similar(n, pending) >= 0.7;
+  pending = n;
+  if (live && !agreed && n.length < 8) {
+    showRows(lines, null, "");
+    setStatus("Hold steady…");
+    return;
+  }
+  const token = ++pass;
+  const joined = lines.map(l => l.text).join("\n");
+  if (fail.norm === n && Date.now() - fail.at < 8000) return;
+  if (!cache.has(fromEl.value + ">" + toEl.value + ":" + n) && Date.now() - lastNet < 1600) {
+    showRows(lines, null, "");
+    setStatus("Translating…");
+    return;
+  }
+  lastNet = Date.now();
+  showRows(lines, null, "");
+  setStatus("Translating…");
+  try {
+    const out = await translateText(joined);
+    if (token !== pass) return;
+    stable = n;
+    const paired = pair(lines.map(l => l.text), out);
+    showRows(lines, paired, paired ? "" : out);
+    setStatus(live ? "Live" : "Photo");
+    setError("");
+  } catch (err) {
+    if (token !== pass) return;
+    fail = { norm:n, at:Date.now() };
+    setStatus(live ? "Live" : "Photo");
+    setError(err instanceof Error ? err.message : "Couldn't translate that.");
+  }
+}
+async function readCanvas(canvas, live){
+  const w = await reader();
+  const result = await enqueue(() => w.recognize(canvas));
+  const lines = linesFrom(result.data, canvas.width, canvas.height);
+  await consume(lines, live);
+}
+async function tick(){
+  if (!loopOn) return;
+  const t0 = performance.now();
+  if (video && video.videoWidth && !frozen && !stillUrl) {
+    const frame = grab(video);
+    if (frame) {
+      try { await readCanvas(frame, true); }
+      catch (err) { setError(err instanceof Error ? err.message : "Couldn't read that frame."); }
+    }
+  }
+  const wait = Math.max(280, 900 - (performance.now() - t0));
+  setTimeout(tick, wait);
+}
+function ensureVideo(){
+  if (video) return video;
+  video = document.createElement("video");
+  video.playsInline = true;
+  video.muted = true;
+  video.autoplay = true;
+  video.setAttribute("playsinline", "");
+  stage.prepend(video);
+  return video;
+}
+async function startCamera(){
+  wanted = true;
+  frozen = false;
+  setError("");
+  if (stillUrl) { URL.revokeObjectURL(stillUrl); stillUrl = ""; }
+  const shot = stage.querySelector("img.shot");
+  if (shot) shot.remove();
+  $("sample").hidden = true;
+  const wait = document.createElement("div");
+  wait.className = "wait";
+  wait.id = "opening";
+  wait.textContent = "Opening camera…";
+  stage.appendChild(wait);
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio:false,
+      video:{ facingMode:{ ideal:facing }, width:{ ideal:1280 }, height:{ ideal:720 } }
+    });
+    const el = ensureVideo();
+    el.srcObject = stream;
+    await el.play();
+    const opening = $("opening");
+    if (opening) opening.remove();
+    if (!stage.querySelector(".frame")) {
+      const frame = document.createElement("div");
+      frame.className = "frame";
+      frame.innerHTML = "<i></i><i></i><i></i><i></i>";
+      stage.appendChild(frame);
+    }
+    openBtn.textContent = "Pause";
+    openBtn.className = "hold";
+    flipBtn.hidden = false;
+    if (!loopOn) { loopOn = true; tick(); }
+    reader().catch(err => setError(err instanceof Error ? err.message : "Couldn't start the reader."));
+  } catch (e) {
+    wanted = false;
+    const opening = $("opening");
+    if (opening) opening.remove();
+    $("sample").hidden = false;
+    $("sampleNote").textContent = "Camera is blocked in this view";
+    $("sample").querySelector("p:last-child").textContent = "Allow camera access and try again, or choose a photo. You can also go back to the planner.";
+    openBtn.textContent = "Open camera";
+    openBtn.className = "go";
+    flipBtn.hidden = true;
+  }
+}
+function pauseLive(){
+  frozen = !frozen;
+  if (video) { if (frozen) video.pause(); else video.play().catch(() => {}); }
+  openBtn.textContent = frozen ? "Live" : "Pause";
+  setStatus(frozen ? "Frozen" : "Live");
+}
+fromEl.onchange = toEl.onchange = () => {
+  if (fromEl.value === toEl.value) {
+    const other = LANGS.find(l => l.id !== fromEl.value);
+    if (fromEl === document.activeElement) toEl.value = other.id;
+    else fromEl.value = other.id;
+  }
+  saveDir();
+  stable = ""; pending = ""; pass++;
+  clearSheet();
+  workerCode = "";
+};
+$("swap").onclick = () => {
+  const a = fromEl.value;
+  fromEl.value = toEl.value;
+  toEl.value = a;
+  saveDir();
+  stable = ""; pending = ""; pass++;
+  clearSheet();
+};
+openBtn.onclick = () => {
+  if (!wanted) startCamera();
+  else if (stillUrl) startCamera();
+  else pauseLive();
+};
+flipBtn.onclick = () => {
+  facing = facing === "environment" ? "user" : "environment";
+  if (wanted) startCamera();
+};
+$("photo").onclick = () => $("file").click();
+$("file").onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  setError("");
+  $("sample").hidden = true;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (stillUrl) URL.revokeObjectURL(stillUrl);
+  stillUrl = URL.createObjectURL(file);
+  frozen = true;
+  loopOn = false;
+  let img = stage.querySelector("img.shot");
+  if (!img) { img = document.createElement("img"); img.className = "shot"; img.alt = "Photo to translate"; stage.prepend(img); }
+  img.src = stillUrl;
+  if (video) video.removeAttribute("srcObject");
+  openBtn.textContent = "Camera";
+  openBtn.className = "hold";
+  flipBtn.hidden = true;
+  wanted = true;
+  setStatus("Reading…");
+  try {
+    const bitmap = await createImageBitmap(file);
+    const max = 1600;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    stable = ""; pending = ""; pass++;
+    await readCanvas(canvas, false);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Couldn't read that photo.");
+  }
+};
+$("speak").onclick = () => {
+  const text = spoken.trim();
+  if (!text || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text.slice(0, 400));
+  u.lang = lang(toEl.value).say;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+};
+window.addEventListener("offline", () => { $("net").textContent = "Offline"; });
+window.addEventListener("online", () => { $("net").textContent = "Online"; });
+if (!navigator.onLine) $("net").textContent = "Offline";
+</script>
+</body>
+</html>
