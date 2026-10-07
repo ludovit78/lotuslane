@@ -34,7 +34,19 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop
 .chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
 .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
 .tabs .chip{width:100%;min-height:44px;white-space:normal}
-#acbBox,#near,#playOut,#savedList{position:static;clear:both;margin-top:12px}
+.fx{background:#1e4d86;border-radius:18px;padding:10px;color:#10233f}
+.fx-row{display:grid;grid-template-columns:1fr 86px;gap:8px;margin-bottom:8px}
+.fx-card{background:#fff;border-radius:14px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
+.fx-card b{font-size:1.35rem;display:block}
+.fx-side{background:#43a047;color:#fff;border:0;border-radius:14px;font-weight:800;font-size:1.05rem}
+.fx-meta{display:grid;grid-template-columns:1.2fr .8fr;gap:8px;margin-bottom:8px}
+.fx-meta div,.fx-upd{background:#fff;border-radius:14px;padding:10px}
+.fx-upd{background:#5d7ea8;color:#fff;border:0;font-weight:800;font-size:1.2rem}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.keys button{min-height:52px;border:0;border-radius:10px;background:#c5c7c9;font-weight:800;font-size:1.15rem}
+.keys button.c{background:#a3533a;color:#fff}
+.keys button.m{background:#2f4f78;color:#fff}
+.keys button.op{background:#7f9bbd;color:#fff}
 #acbBox a,#near a{display:block;margin-top:8px}
 .hero-img{width:100%;height:180px;object-fit:cover;border-radius:18px;display:block;margin:8px 0 12px;background:#0e8f9a}
 .logo{width:42px;height:42px;border-radius:12px;object-fit:cover;display:block}
@@ -185,13 +197,21 @@ nav.bar button.on{color:var(--lotus)}
   <button class="btn s" type="button" id="locBtn" style="margin-top:8px">Show my location</button>
   <div id="mapBox" class="box" style="margin-top:10px;display:none"></div>
   <div id="playOut"></div>
-  <div class="box" style="margin-top:12px">
-    <h3>Currency</h3>
-    <p class="meta">Two taps. First currency is the amount. Second is the result.</p>
-    <div class="tabs" id="curTabs"></div>
-    <label>Amount</label>
-    <input id="calcAmt" type="number" value="100000"/>
-    <div id="calcOut" class="box" style="margin-top:10px;background:#0c6b4f;color:#fff"></div>
+  <div class="fx" style="margin-top:12px">
+    <div class="fx-row">
+      <div class="fx-card" id="fxFrom"></div>
+      <button class="fx-side" type="button" id="pickFrom">From</button>
+    </div>
+    <div class="fx-row">
+      <div class="fx-card" id="fxTo"></div>
+      <button class="fx-side" type="button" id="pickTo">To</button>
+    </div>
+    <div class="fx-meta">
+      <div><span class="meta">Last updated</span><b id="fxTime">—</b></div>
+      <button class="fx-upd" type="button" id="fxUpdate">Update</button>
+    </div>
+    <div id="fxPick" class="tabs"></div>
+    <div class="keys" id="keys"></div>
   </div>
   <div class="box" style="margin-top:12px">
     <h3>My restaurants & shops</h3>
@@ -500,28 +520,46 @@ function showPlaceLists(q){
   }
   renderCalc();
 }
-let calcFrom = "VND", calcTo = "GBP", calcPick = "from";
+let calcFrom = "VND", calcTo = "GBP", calcAmt = "1", calcMem = 0, fxUpdated = "";
+function fmtCur(code, n){
+  const c = CUR.find(x=>x[0]===code);
+  const shown = (code==="VND"||code==="IDR"||code==="KRW") ? Math.round(n).toLocaleString() : Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  return c[1] + shown;
+}
 function renderCalc(){
-  const tabs = $("#curTabs");
-  if(tabs && !tabs.dataset.ready){
-    tabs.innerHTML = CUR.map(([c,s,land,flag])=>`<button class="chip" type="button" data-cur="${c}">${flag}<br>${land}</button>`).join("");
-    tabs.dataset.ready = "1";
-    tabs.onclick = e => {
-      const b = e.target.closest("[data-cur]");
-      if(!b) return;
-      if(calcPick === "from") { calcFrom = b.dataset.cur; calcPick = "to"; }
-      else { calcTo = b.dataset.cur; calcPick = "from"; }
+  const a = CUR.find(x=>x[0]===calcFrom), b = CUR.find(x=>x[0]===calcTo);
+  const raw = parseFloat(calcAmt) || 0;
+  const out = raw / (rate(calcFrom)||1) * (rate(calcTo)||1);
+  $("#fxFrom").innerHTML = `<div><span style="font-size:1.6rem">${a[3]}</span><b>${a[0]}</b><span class="meta">${a[2]}</span></div><b>${fmtCur(calcFrom, raw)}</b>`;
+  $("#fxTo").innerHTML = `<div><span style="font-size:1.6rem">${b[3]}</span><b>${b[0]}</b><span class="meta">${b[2]}</span></div><b>${fmtCur(calcTo, out)}</b>`;
+  $("#fxTime").textContent = fxUpdated || "Saved rate";
+  if(!$("#keys").dataset.ready){
+    const keys = ["C","7","8","9","÷","+/−","4","5","6","×","MS","1","2","3","−","MR","0",".","=","+"];
+    $("#keys").innerHTML = keys.map(k=>`<button type="button" class="${k==="C"?"c":k==="MS"||k==="MR"?"m":"+−×÷".includes(k)?"op":""}" data-k="${k}">${k}</button>`).join("");
+    $("#keys").dataset.ready = "1";
+    $("#keys").onclick = e => {
+      const k = e.target.closest("[data-k]")?.dataset.k;
+      if(!k) return;
+      if(k==="C") calcAmt = "0";
+      else if(k==="MS") calcMem = parseFloat(calcAmt)||0;
+      else if(k==="MR") calcAmt = String(calcMem);
+      else if(k==="+/-" || k==="+/−") calcAmt = String(-(parseFloat(calcAmt)||0));
+      else if(k==="=") renderCalc();
+      else if("0123456789.".includes(k)) calcAmt = (calcAmt==="0" && k!=="." ? "" : calcAmt) + k;
       renderCalc();
     };
-    $("#calcAmt").addEventListener("input", renderCalc);
+    $("#pickFrom").onclick = () => showPick("from");
+    $("#pickTo").onclick = () => showPick("to");
+    $("#fxUpdate").onclick = () => rates();
   }
-  $$("#curTabs .chip").forEach(b => b.classList.toggle("on", b.dataset.cur===calcFrom || b.dataset.cur===calcTo));
-  const raw = +($("#calcAmt")&&$("#calcAmt").value)||0;
-  const usd = raw / (rate(calcFrom)||1);
-  const out = usd * (rate(calcTo)||1);
-  const a = CUR.find(x=>x[0]===calcFrom), b = CUR.find(x=>x[0]===calcTo);
-  const shown = (calcTo==="VND"||calcTo==="IDR"||calcTo==="KRW") ? Math.round(out).toLocaleString() : out.toFixed(2);
-  $("#calcOut").innerHTML = `<span>${a[3]} ${a[2]} · ${a[1]}${raw.toLocaleString()}</span><b style="display:block;font-size:1.6rem;margin-top:4px">${b[3]} ${b[2]} · ${b[1]}${shown}</b><span class="meta" style="color:#d1fae5">Next tap sets ${calcPick==="from"?"the amount currency":"the result"}</span>`;
+}
+function showPick(which){
+  $("#fxPick").innerHTML = CUR.map(([c,s,land,flag])=>`<button class="chip" type="button" data-set="${c}" data-which="${which}">${flag} ${c}</button>`).join("");
+  $$("#fxPick [data-set]").forEach(btn => btn.onclick = () => {
+    if(which==="from") calcFrom = btn.dataset.set; else calcTo = btn.dataset.set;
+    $("#fxPick").innerHTML = "";
+    renderCalc();
+  });
 }
 function renderSaved(){
   state.saved = state.saved || [];
@@ -591,6 +629,7 @@ async function rates(){
     const j=await r.json();
     FX={...FX,...j.rates,USD:1};
     localStorage.setItem("lotuslane_fx", JSON.stringify(FX));
+    fxUpdated = new Date().toLocaleString();
     renderPlan(); renderCalc();
   }catch(e){}
 }
