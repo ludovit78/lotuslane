@@ -34,8 +34,8 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop
 .chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
 .tabs{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0;clear:both}
 .tabs .chip{width:100%;min-height:44px;white-space:normal;display:block;text-align:center}
-#scoutLinks{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
-#scoutLinks a{display:block;width:100%;margin:0}
+#scoutLinks,.links{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+#scoutLinks a,.links a{display:block;width:100%;margin:0;text-align:center}
 .fx{background:#1e4d86;border-radius:18px;padding:10px;color:#10233f}
 .fx-row{display:grid;grid-template-columns:1fr 86px;gap:8px;margin-bottom:8px}
 .fx-card{background:#fff;border-radius:14px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
@@ -510,13 +510,13 @@ function showPlaceLists(q){
       <p><b>Motorbike hire</b> ${p.bike.join(" · ")}</p>
       <p><b>Massage</b> ${p.massage.join(" · ")}</p>
       <p><b>Tourist info</b> ${p.info}</p>
-      <div style="margin-top:8px">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}
+      <div class="links">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join("")}
       <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent("night market "+vn)}" target="_blank">Night markets</a>
       <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent("motorbike rental "+vn)}" target="_blank">Bike hire map</a></div>
     </div><div class="tabs" style="margin-top:8px">${Object.keys(VN).map(k=>`<button class="chip" type="button" data-vn="${k}">${k}</button>`).join("")}</div>`;
     $$("[data-vn]").forEach(b=>b.onclick=()=>{ $("#placeQ").value=b.dataset.vn; showPlaceLists(b.dataset.vn); });
   } else {
-    $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${query}</h3><p>Pick a Vietnam stop or search Maps.</p>${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}</div>
+    $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${query}</h3><p>Pick a Vietnam stop or search Maps.</p><div class="links">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join("")}</div></div>
       <div class="tabs">${Object.keys(VN).map(k=>`<button class="chip" type="button" data-vn="${k}">${k}</button>`).join("")}</div>`;
     $$("[data-vn]").forEach(b=>b.onclick=()=>{ $("#placeQ").value=b.dataset.vn; showPlaceLists(b.dataset.vn); });
   }
