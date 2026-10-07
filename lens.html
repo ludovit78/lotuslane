@@ -56,22 +56,47 @@ button:disabled{opacity:.4}
 .frame i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}
 .frame i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.seg{display:flex;background:#1e3329;border-radius:999px;padding:3px;flex:none}
+.seg button{border:0;background:transparent;color:#b7c7be;border-radius:999px;min-height:40px;padding:0 12px;font-weight:700}
+.seg button.on{background:#f6efe4;color:#14241c}
+.panel{display:none;flex:1;min-height:0;flex-direction:column}
+.panel.on{display:flex}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 14px calc(10px + env(safe-area-inset-bottom));background:#14241c;flex:none}
+.modes button{min-height:58px;border:0;border-radius:16px;background:#1e3329;color:#f6efe4;font-weight:750;font-size:.95rem}
+.modes button.on{background:linear-gradient(135deg,#0c6b4f,#0e8f9a)}
+#scanDraft{margin:8px 14px;width:calc(100% - 28px);min-height:140px;border:0;border-radius:16px;padding:12px;color:#14241c;background:#fffdf9}
+#scanOut{margin:0 14px 8px}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
     <div class="row">
-      <div class="brand"><a href="index.html">LotusLane</a><small>Read a sign</small></div>
-      <button type="button" class="ghost" id="speak" style="flex:none;padding:0 14px">Speak</button>
+      <div class="brand"><a href="index.html">LotusLane</a><small id="brandSub">Voice</small></div>
+      <div class="seg" role="group" aria-label="Connection">
+        <button type="button" id="netOn">Online</button>
+        <button type="button" id="netOff">Offline</button>
+      </div>
     </div>
     <div class="langs">
       <select id="from" aria-label="Language on the page"></select>
       <button type="button" class="swap" id="swap" aria-label="Swap languages">⇄</button>
       <select id="to" aria-label="Language you read"></select>
     </div>
-    <div class="hint"><span id="hint">Camera reads the page language</span><span id="net">Online</span></div>
+    <div class="hint"><span id="hint">Tap Start, speak, then Stop</span></div>
   </header>
+  <section class="panel on" data-panel="voice">
+    <div class="vcard" id="vcard">
+      <div class="src" id="vHeard">Tap Start and speak</div>
+      <div class="out" id="vOut" hidden></div>
+    </div>
+    <div class="dock">
+      <button type="button" class="go" id="vStart">Start</button>
+      <button type="button" class="ghost" id="vStop" disabled>Stop</button>
+      <button type="button" class="ghost" id="speak" style="flex:none;padding:0 14px">Speak</button>
+    </div>
+  </section>
+  <section class="panel" data-panel="camera">
   <div class="stage" id="stage">
     <div class="sample" id="sample">
       <p id="sampleNote">Sample, until the camera is on</p>
@@ -80,23 +105,31 @@ button:disabled{opacity:.4}
       <p style="margin-top:14px">Hold a menu or a sign steady. Words translate as they settle. The first language download takes a moment.</p>
     </div>
   </div>
-  <div class="vcard" id="vcard" hidden>
-    <div class="src" id="vHeard"></div>
-    <div class="out" id="vOut"></div>
-  </div>
-  <p class="status" id="status">Point at words</p>
-  <p class="err" id="error" hidden></p>
   <div class="dock">
     <button type="button" class="ghost" id="photo">Photo</button>
     <button type="button" class="go" id="open">Open camera</button>
     <button type="button" class="ghost" id="flip" hidden>Flip</button>
   </div>
-  <div class="dock bottom">
-    <button type="button" class="go" id="vStart">Start</button>
-    <button type="button" class="ghost" id="vStop" disabled>Stop</button>
-  </div>
+  </section>
+  <section class="panel" data-panel="scan">
+    <p class="status">Photograph a menu or a page. Check the words, then translate.</p>
+    <textarea id="scanDraft" placeholder="Words from the page show here"></textarea>
+    <div class="dock">
+      <button type="button" class="ghost" id="scanShot">Take photo</button>
+      <button type="button" class="go" id="scanGo">Translate</button>
+    </div>
+    <div class="vcard" id="scanOut" hidden></div>
+  </section>
+  <p class="status" id="status">Tap Start, speak, then Stop</p>
+  <p class="err" id="error" hidden></p>
+  <nav class="modes" aria-label="How to translate">
+    <button type="button" data-tool="voice" class="on">Voice</button>
+    <button type="button" data-tool="camera">Camera</button>
+    <button type="button" data-tool="scan">Scan</button>
+  </nav>
   <p class="sr" id="live" aria-live="polite"></p>
   <input id="file" class="sr" type="file" accept="image/*"/>
+  <input id="scanFile" class="sr" type="file" accept="image/*" capture="environment"/>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
@@ -125,10 +158,15 @@ LANGS.forEach(l => {
   fromEl.add(new Option(l.name, l.id));
   toEl.add(new Option(l.name, l.id));
 });
+let netMode = "online";
+let tool = "voice";
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem("lotuslane.lens") || "{}"); } catch (e) {}
 fromEl.value = LANGS.some(l => l.id === saved.from) ? saved.from : "vi";
 toEl.value = LANGS.some(l => l.id === saved.to) ? saved.to : "en";
+if (saved.tool === "voice" || saved.tool === "camera" || saved.tool === "scan") tool = saved.tool;
+if (saved.net === "online" || saved.net === "offline") netMode = saved.net;
+if (!navigator.onLine) netMode = "offline";
 if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
 
 const cache = new Map();
@@ -152,8 +190,8 @@ let spoken = "Rare beef pho";
 
 function lang(id){ return LANGS.find(l => l.id === id); }
 function saveDir(){
-  localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value}));
-  $("hint").textContent = "Camera reads " + lang(fromEl.value).name;
+  localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value, tool:tool, net:netMode}));
+  paintChrome();
 }
 saveDir();
 function setStatus(t){ statusEl.textContent = t; }
@@ -182,11 +220,117 @@ function enqueue(fn){
 function decode(s){
   return s.replace(/"/g, '"').replace(/&#39;|'/g, "'").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
 }
+
+const LEX = [["hello", "xin chào"], ["hi", "chào"], ["good morning", "chào buổi sáng"], ["good afternoon", "chào buổi chiều"], ["good evening", "chào buổi tối"], ["good night", "chúc ngủ ngon"], ["goodbye", "tạm biệt"], ["bye", "tạm biệt"], ["see you later", "hẹn gặp lại"], ["see you", "hẹn gặp lại"], ["thank you very much", "cảm ơn rất nhiều"], ["thank you", "cảm ơn"], ["thanks", "cảm ơn"], ["you're welcome", "không có gì"], ["please", "làm ơn"], ["excuse me", "xin lỗi"], ["i'm sorry", "tôi xin lỗi"], ["sorry", "tôi xin lỗi"], ["yes", "vâng"], ["no", "không"], ["okay", "được"], ["ok", "được"], ["how are you", "bạn khỏe không"], ["i'm fine thank you", "tôi khỏe, cảm ơn"], ["i'm fine", "tôi khỏe"], ["what is your name", "tên bạn là gì"], ["what's your name", "tên bạn là gì"], ["my name is", "tên tôi là"], ["nice to meet you", "rất vui được gặp bạn"], ["i don't understand", "tôi không hiểu"], ["please speak slowly", "xin nói chậm"], ["speak slowly", "nói chậm"], ["can you repeat that", "bạn nói lại được không"], ["please repeat", "xin nói lại"], ["do you speak english", "bạn có nói tiếng Anh không"], ["do you speak vietnamese", "bạn có nói tiếng Việt không"], ["i don't speak vietnamese", "tôi không nói được tiếng Việt"], ["i speak a little vietnamese", "tôi nói được một chút tiếng Việt"], ["i am learning vietnamese", "tôi đang học tiếng Việt"], ["where is the bathroom", "nhà vệ sinh ở đâu"], ["where is the toilet", "nhà vệ sinh ở đâu"], ["where is the station", "nhà ga ở đâu"], ["where is the hotel", "khách sạn ở đâu"], ["where is the airport", "sân bay ở đâu"], ["where is the exit", "lối ra ở đâu"], ["where is the nearest hospital", "bệnh viện gần nhất ở đâu"], ["how much is this", "cái này bao nhiêu tiền"], ["how much does this cost", "cái này giá bao nhiêu"], ["how much", "bao nhiêu tiền"], ["too expensive", "đắt quá"], ["the check please", "làm ơn tính tiền"], ["water please", "cho tôi nước"], ["coffee please", "cho tôi cà phê"], ["tea please", "cho tôi trà"], ["beer please", "cho tôi bia"], ["i would like water", "tôi muốn nước"], ["i would like coffee", "tôi muốn cà phê"], ["i would like", "tôi muốn"], ["i want water", "tôi muốn nước"], ["i want coffee", "tôi muốn cà phê"], ["i need help", "tôi cần giúp đỡ"], ["can you help me", "bạn giúp tôi được không"], ["call a doctor", "gọi bác sĩ"], ["i need a doctor", "tôi cần bác sĩ"], ["call the police", "gọi công an"], ["i am lost", "tôi bị lạc"], ["i'm lost", "tôi bị lạc"], ["turn left", "rẽ trái"], ["turn right", "rẽ phải"], ["go straight", "đi thẳng"], ["stop here", "dừng ở đây"], ["wait a moment", "đợi một chút"], ["is it far", "có xa không"], ["near here", "gần đây"], ["i have a reservation", "tôi đã đặt chỗ"], ["a table for two", "một bàn cho hai người"], ["i am vegetarian", "tôi ăn chay"], ["i'm vegetarian", "tôi ăn chay"], ["i don't eat meat", "tôi không ăn thịt"], ["no spicy", "không cay"], ["no sugar", "không đường"], ["no ice", "không đá"], ["the food is delicious", "đồ ăn ngon"], ["it hurts here", "đau ở đây"], ["i am allergic", "tôi bị dị ứng"], ["what time is it", "mấy giờ rồi"], ["what time does it open", "mấy giờ mở cửa"], ["what time does it close", "mấy giờ đóng cửa"], ["where can i buy a ticket", "tôi mua vé ở đâu"], ["can i pay by card", "tôi trả bằng thẻ được không"], ["keep the change", "giữ tiền thừa"], ["please take me to this address", "làm ơn đưa tôi đến địa chỉ này"], ["please write it down", "xin viết ra"], ["what does this mean", "cái này nghĩa là gì"], ["one more time", "một lần nữa"], ["i love you", "tôi yêu bạn"], ["good luck", "chúc may mắn"], ["congratulations", "chúc mừng"], ["welcome", "chào mừng"], ["cheers", "chúc sức khỏe"], ["i'm hungry", "tôi đói"], ["i'm thirsty", "tôi khát"], ["i'm tired", "tôi mệt"], ["this year", "năm nay"], ["hello, how are you", "xin chào, bạn khỏe không"], ["i", "tôi"], ["i'm", "tôi"], ["you", "bạn"], ["we", "chúng tôi"], ["they", "họ"], ["he", "anh ấy"], ["she", "cô ấy"], ["this", "cái này"], ["that", "cái đó"], ["here", "ở đây"], ["there", "ở đó"], ["and", "và"], ["or", "hoặc"], ["but", "nhưng"], ["with", "với"], ["without", "không có"], ["for", "cho"], ["from", "từ"], ["in", "trong"], ["on", "trên"], ["at", "ở"], ["of", "của"], ["my", "của tôi"], ["your", "của bạn"], ["is", "là"], ["are", "là"], ["am", "là"], ["was", "đã"], ["be", "là"], ["have", "có"], ["has", "có"], ["want", "muốn"], ["need", "cần"], ["like", "thích"], ["love", "yêu"], ["go", "đi"], ["come", "đến"], ["eat", "ăn"], ["drink", "uống"], ["see", "thấy"], ["look", "nhìn"], ["listen", "nghe"], ["speak", "nói"], ["say", "nói"], ["understand", "hiểu"], ["know", "biết"], ["buy", "mua"], ["pay", "trả"], ["help", "giúp"], ["wait", "đợi"], ["open", "mở"], ["close", "đóng"], ["read", "đọc"], ["write", "viết"], ["work", "làm việc"], ["live", "sống"], ["stay", "ở"], ["take", "lấy"], ["give", "đưa"], ["call", "gọi"], ["find", "tìm"], ["stop", "dừng"], ["walk", "đi bộ"], ["sit", "ngồi"], ["sleep", "ngủ"], ["don't", "không"], ["not", "không"], ["can", "có thể"], ["can't", "không thể"], ["please", "làm ơn"], ["thanks", "cảm ơn"], ["hello", "xin chào"], ["good", "tốt"], ["bad", "xấu"], ["big", "lớn"], ["small", "nhỏ"], ["hot", "nóng"], ["cold", "lạnh"], ["hungry", "đói"], ["thirsty", "khát"], ["tired", "mệt"], ["happy", "vui"], ["beautiful", "đẹp"], ["expensive", "đắt"], ["cheap", "rẻ"], ["new", "mới"], ["old", "cũ"], ["near", "gần"], ["far", "xa"], ["left", "trái"], ["right", "phải"], ["today", "hôm nay"], ["tomorrow", "ngày mai"], ["yesterday", "hôm qua"], ["now", "bây giờ"], ["later", "sau"], ["morning", "buổi sáng"], ["night", "đêm"], ["day", "ngày"], ["time", "thời gian"], ["name", "tên"], ["friend", "bạn"], ["family", "gia đình"], ["person", "người"], ["child", "trẻ em"], ["water", "nước"], ["food", "đồ ăn"], ["rice", "cơm"], ["noodles", "mì"], ["bread", "bánh mì"], ["coffee", "cà phê"], ["tea", "trà"], ["milk", "sữa"], ["beer", "bia"], ["restaurant", "nhà hàng"], ["hotel", "khách sạn"], ["room", "phòng"], ["airport", "sân bay"], ["station", "nhà ga"], ["taxi", "taxi"], ["bus", "xe buýt"], ["train", "tàu"], ["ticket", "vé"], ["money", "tiền"], ["price", "giá"], ["card", "thẻ"], ["doctor", "bác sĩ"], ["hospital", "bệnh viện"], ["medicine", "thuốc"], ["phone", "điện thoại"], ["music", "nhạc"], ["song", "bài hát"], ["book", "sách"], ["street", "đường"], ["city", "thành phố"], ["country", "đất nước"], ["vietnam", "Việt Nam"], ["english", "tiếng Anh"], ["vietnamese", "tiếng Việt"], ["language", "ngôn ngữ"], ["document", "tài liệu"], ["page", "trang"], ["address", "địa chỉ"], ["map", "bản đồ"], ["monday", "thứ Hai"], ["tuesday", "thứ Ba"], ["wednesday", "thứ Tư"], ["thursday", "thứ Năm"], ["friday", "thứ Sáu"], ["saturday", "thứ Bảy"], ["sunday", "Chủ Nhật"], ["zero", "không"], ["one", "một"], ["two", "hai"], ["three", "ba"], ["four", "bốn"], ["five", "năm"], ["six", "sáu"], ["seven", "bảy"], ["eight", "tám"], ["nine", "chín"], ["ten", "mười"], ["the", ""], ["a", ""], ["an", ""], ["to", ""], ["do", ""], ["does", ""], ["did", ""]];
+const TRAVEL = [{"en": "hello", "vi": "xin chào", "th": "สวัสดี", "id": "halo", "ms": "helo", "km": "ជំរាបសួរ", "lo": "ສະບາຍດີ", "zh": "你好", "ja": "こんにちは", "ko": "안녕하세요", "sk": "ahoj"}, {"en": "thank you", "vi": "cảm ơn", "th": "ขอบคุณ", "id": "terima kasih", "ms": "terima kasih", "km": "អរគុណ", "lo": "ຂອບໃຈ", "zh": "谢谢", "ja": "ありがとう", "ko": "감사합니다", "sk": "ďakujem"}, {"en": "yes", "vi": "vâng", "th": "ใช่", "id": "ya", "ms": "ya", "km": "បាទ", "lo": "ແມ່ນ", "zh": "是", "ja": "はい", "ko": "네", "sk": "áno"}, {"en": "no", "vi": "không", "th": "ไม่", "id": "tidak", "ms": "tidak", "km": "ទេ", "lo": "ບໍ່", "zh": "不是", "ja": "いいえ", "ko": "아니요", "sk": "nie"}, {"en": "please", "vi": "làm ơn", "th": "กรุณา", "id": "tolong", "ms": "tolong", "km": "សូម", "lo": "ກະລຸນາ", "zh": "请", "ja": "お願いします", "ko": "부탁합니다", "sk": "prosím"}, {"en": "excuse me", "vi": "xin lỗi", "th": "ขอโทษ", "id": "permisi", "ms": "maaf", "km": "សុំទោស", "lo": "ຂໍໂທດ", "zh": "不好意思", "ja": "すみません", "ko": "실례합니다", "sk": "prepáčte"}, {"en": "sorry", "vi": "tôi xin lỗi", "th": "ขอโทษ", "id": "maaf", "ms": "maaf", "km": "សុំទោស", "lo": "ຂໍໂທດ", "zh": "对不起", "ja": "ごめんなさい", "ko": "미안합니다", "sk": "prepáčte"}, {"en": "goodbye", "vi": "tạm biệt", "th": "ลาก่อน", "id": "selamat tinggal", "ms": "selamat tinggal", "km": "លាហើយ", "lo": "ລາກ່ອນ", "zh": "再见", "ja": "さようなら", "ko": "안녕히 가세요", "sk": "dovidenia"}, {"en": "how much", "vi": "bao nhiêu tiền", "th": "เท่าไหร่", "id": "berapa", "ms": "berapa", "km": "ប៉ុន្មាន", "lo": "ເທົ່າໃດ", "zh": "多少钱", "ja": "いくら", "ko": "얼마예요", "sk": "koľko"}, {"en": "where is the toilet", "vi": "nhà vệ sinh ở đâu", "th": "ห้องน้ำอยู่ที่ไหน", "id": "di mana toilet", "ms": "di mana tandas", "km": "បន្ទប់ទឹកនៅឯណា", "lo": "ຫ້ອງນ້ຳຢູ່ໃສ", "zh": "厕所在哪里", "ja": "トイレはどこ", "ko": "화장실이 어디예요", "sk": "kde je toaleta"}, {"en": "where is the station", "vi": "nhà ga ở đâu", "th": "สถานีอยู่ที่ไหน", "id": "di mana stasiun", "ms": "di mana stesen", "km": "ស្ថានីយនៅឯណា", "lo": "ສະຖານີຢູ່ໃສ", "zh": "车站在哪里", "ja": "駅はどこ", "ko": "역이 어디예요", "sk": "kde je stanica"}, {"en": "i am vegetarian", "vi": "tôi ăn chay", "th": "ผมกินเจ", "id": "saya vegetarian", "ms": "saya vegetarian", "km": "ខ្ញុំញ៉ាំបន្លែ", "lo": "ຂ້ອຍກິນເຈ", "zh": "我吃素", "ja": "私はベジタリアンです", "ko": "저는 채식입니다", "sk": "som vegetarián"}, {"en": "no meat", "vi": "không thịt", "th": "ไม่เอาเนื้อ", "id": "tanpa daging", "ms": "tanpa daging", "km": "គ្មានសាច់", "lo": "ບໍ່ເອົາຊີ້ນ", "zh": "不要肉", "ja": "肉なし", "ko": "고기 빼 주세요", "sk": "bez mäsa"}, {"en": "no fish", "vi": "không cá", "th": "ไม่เอาปลา", "id": "tanpa ikan", "ms": "tanpa ikan", "km": "គ្មានត្រី", "lo": "ບໍ່ເອົາປາ", "zh": "不要鱼", "ja": "魚なし", "ko": "생선 빼 주세요", "sk": "bez ryby"}, {"en": "water", "vi": "nước", "th": "น้ำ", "id": "air", "ms": "air", "km": "ទឹក", "lo": "ນ້ຳ", "zh": "水", "ja": "水", "ko": "물", "sk": "voda"}, {"en": "the bill please", "vi": "tính tiền", "th": "เช็คบิล", "id": "minta bon", "ms": "minta bil", "km": "គិតលុយ", "lo": "ເກັບເງິນ", "zh": "买单", "ja": "お会計", "ko": "계산서 주세요", "sk": "účet prosím"}, {"en": "delicious", "vi": "ngon", "th": "อร่อย", "id": "enak", "ms": "sedap", "km": "ឆ្ងាញ់", "lo": "ແຊບ", "zh": "好吃", "ja": "おいしい", "ko": "맛있어요", "sk": "chutné"}, {"en": "i don't understand", "vi": "tôi không hiểu", "th": "ฉันไม่เข้าใจ", "id": "saya tidak mengerti", "ms": "saya tidak faham", "km": "ខ្ញុំមិនយល់", "lo": "ຂ້ອຍບໍ່ເຂົ້າໃຈ", "zh": "我不明白", "ja": "わかりません", "ko": "이해가 안 돼요", "sk": "nerozumiem"}, {"en": "do you speak english", "vi": "bạn có nói tiếng Anh không", "th": "พูดภาษาอังกฤษได้ไหม", "id": "bisa bahasa Inggris", "ms": "boleh berbahasa Inggeris", "km": "អ្នកនិយាយអង់គ្លេសបានទេ", "lo": "ເວົ້າອັງກິດໄດ້ບໍ", "zh": "你会说英语吗", "ja": "英語を話せますか", "ko": "영어 하세요", "sk": "hovoríte po anglicky"}, {"en": "help", "vi": "giúp tôi", "th": "ช่วยด้วย", "id": "tolong", "ms": "tolong", "km": "ជួយផង", "lo": "ຊ່ວຍແດ່", "zh": "救命", "ja": "助けて", "ko": "도와주세요", "sk": "pomoc"}, {"en": "too spicy", "vi": "cay quá", "th": "เผ็ดไป", "id": "terlalu pedas", "ms": "terlalu pedas", "km": "ហឹរពេក", "lo": "ເຜັດໄປ", "zh": "太辣", "ja": "辛すぎる", "ko": "너무 매워요", "sk": "príliš pálivé"}, {"en": "not spicy", "vi": "không cay", "th": "ไม่เผ็ด", "id": "tidak pedas", "ms": "tidak pedas", "km": "មិនហឹរ", "lo": "ບໍ່ເຜັດ", "zh": "不要辣", "ja": "辛くしないで", "ko": "안 맵게 해 주세요", "sk": "nie ostré"}, {"en": "i want this", "vi": "tôi muốn cái này", "th": "เอาอันนี้", "id": "saya mau ini", "ms": "saya mahu ini", "km": "ខ្ញុំចង់បាននេះ", "lo": "ຂ້ອຍເອົາອັນນີ້", "zh": "我要这个", "ja": "これをください", "ko": "이것 주세요", "sk": "chcem toto"}, {"en": "menu", "vi": "thực đơn", "th": "เมนู", "id": "menu", "ms": "menu", "km": "ម៉ឺនុយ", "lo": "ເມນູ", "zh": "菜单", "ja": "メニュー", "ko": "메뉴", "sk": "jedálny lístok"}, {"en": "airport", "vi": "sân bay", "th": "สนามบิน", "id": "bandara", "ms": "lapangan terbang", "km": "ព្រលានយន្តហោះ", "lo": "ສະໜາມບິນ", "zh": "机场", "ja": "空港", "ko": "공항", "sk": "letisko"}, {"en": "hotel", "vi": "khách sạn", "th": "โรงแรม", "id": "hotel", "ms": "hotel", "km": "សណ្ឋាគារ", "lo": "ໂຮງແຮມ", "zh": "酒店", "ja": "ホテル", "ko": "호텔", "sk": "hotel"}, {"en": "market", "vi": "chợ", "th": "ตลาด", "id": "pasar", "ms": "pasar", "km": "ផ្សារ", "lo": "ຕະຫຼາດ", "zh": "市场", "ja": "市場", "ko": "시장", "sk": "trh"}, {"en": "taxi", "vi": "taxi", "th": "แท็กซี่", "id": "taksi", "ms": "teksi", "km": "តាក់ស៊ី", "lo": "ແທັກຊີ", "zh": "出租车", "ja": "タクシー", "ko": "택시", "sk": "taxi"}, {"en": "please speak slowly", "vi": "xin nói chậm", "th": "พูดช้าๆ ได้ไหม", "id": "tolong pelan-pelan", "ms": "tolong cakap perlahan", "km": "សូមនិយាយយឺតៗ", "lo": "ກະລຸນາເວົ້າຊ້າໆ", "zh": "请说慢一点", "ja": "ゆっくり話してください", "ko": "천천히 말해 주세요", "sk": "hovorte pomaly prosím"}, {"en": "good morning", "vi": "chào buổi sáng", "th": "อรุณสวัสดิ์", "id": "selamat pagi", "ms": "selamat pagi", "km": "អរុណសួស្តី", "lo": "ສະບາຍດີຕອນເຊົ້າ", "zh": "早上好", "ja": "おはよう", "ko": "좋은 아침", "sk": "dobré ráno"}];
+const DICT = Object.create(null);
+function addPair(aLang, a, bLang, b) {
+  const ak = norm(a);
+  const bk = norm(b);
+  if (ak && !DICT[aLang + "|" + bLang + "|" + ak]) DICT[aLang + "|" + bLang + "|" + ak] = b;
+  if (bk && !DICT[bLang + "|" + aLang + "|" + bk]) DICT[bLang + "|" + aLang + "|" + bk] = a;
+}
+for (const row of LEX) addPair("en", row[0], "vi", row[1]);
+for (const row of TRAVEL) {
+  const keys = Object.keys(row);
+  for (let i = 0; i < keys.length; i++) {
+    for (let j = 0; j < keys.length; j++) {
+      if (i !== j && row[keys[i]] && row[keys[j]]) addPair(keys[i], row[keys[i]], keys[j], row[keys[j]]);
+    }
+  }
+}
+const SAVE_KEY = "lotuslane.tr.v1";
+function readSaved(from, to, text) {
+  try {
+    const map = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+    const hit = map[from + "|" + to + "|" + norm(text)];
+    return typeof hit === "string" && hit.trim() ? hit : "";
+  } catch (e) { return ""; }
+}
+function writeSaved(from, to, text, translation) {
+  if (!translation || !translation.trim()) return;
+  try {
+    const map = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+    const key = from + "|" + to + "|" + norm(text);
+    delete map[key];
+    map[key] = translation.trim();
+    const keys = Object.keys(map);
+    if (keys.length > 200) for (const k of keys.slice(0, keys.length - 200)) delete map[k];
+    localStorage.setItem(SAVE_KEY, JSON.stringify(map));
+  } catch (e) {}
+}
+function tokenize(text) {
+  const parts = text.normalize("NFC").trim().split(/(\s+)/);
+  const out = [];
+  for (const raw of parts) {
+    if (!raw) continue;
+    if (/^\s+$/.test(raw)) { out.push({ kind:"gap", raw }); continue; }
+    const m = raw.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u);
+    const core = m && m[2] ? m[2] : "";
+    const key = norm(core);
+    if (!key) { out.push({ kind:"gap", raw }); continue; }
+    out.push({ kind:"word", raw, key, lead: (m && m[1]) || "", tail: (m && m[3]) || "" });
+  }
+  return out;
+}
+function glossOffline(text, from, to) {
+  const tokens = tokenize(text);
+  const words = [];
+  tokens.forEach((t, i) => { if (t.kind === "word") words.push(i); });
+  if (!words.length) return "";
+  const skip = new Set();
+  const repl = new Map();
+  let known = 0;
+  for (let w = 0; w < words.length; ) {
+    let matched = 0;
+    let value = "";
+    const room = Math.min(6, words.length - w);
+    for (let len = room; len >= 1; len--) {
+      const slice = [];
+      for (let k = 0; k < len; k++) {
+        const tok = tokens[words[w + k]];
+        if (tok.kind === "word") slice.push(tok.key);
+      }
+      const hit = DICT[from + "|" + to + "|" + slice.join(" ")];
+      if (hit) { matched = len; value = hit; break; }
+    }
+    if (!matched) { w += 1; continue; }
+    const start = words[w];
+    const end = words[w + matched - 1];
+    const a = tokens[start];
+    const b = tokens[end];
+    repl.set(start, (a.lead || "") + value + (b.tail || ""));
+    for (let i = start; i <= end; i++) skip.add(i);
+    known += matched;
+    w += matched;
+  }
+  if (!known || known / words.length < 0.7) return "";
+  let out = "";
+  for (let i = 0; i < tokens.length; i++) {
+    if (repl.has(i)) { out += repl.get(i); continue; }
+    if (skip.has(i)) continue;
+    out += tokens[i].raw;
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+function lookupOffline(text, from, to) {
+  const exact = DICT[from + "|" + to + "|" + norm(text)];
+  if (exact) return exact;
+  const saved = readSaved(from, to, text);
+  if (saved) return saved;
+  return glossOffline(text, from, to) || "";
+}
+
 async function translateText(text){
   const from = fromEl.value;
   const to = toEl.value;
   const key = from + ">" + to + ":" + norm(text);
   if (cache.has(key)) return cache.get(key);
+  const packed = lookupOffline(text, from, to);
+  if (netMode === "offline" || !navigator.onLine) {
+    if (packed) { cache.set(key, packed); return packed; }
+    throw new Error("Not in the offline pack. Switch to Online once. That line is saved on this phone.");
+  }
   const q = text.slice(0, 450);
   const pair = id => id === "zh" ? "zh-CN" : id;
   let out = "";
@@ -210,8 +354,10 @@ async function translateText(text){
     out = (json[0] || []).map(seg => (Array.isArray(seg) ? seg[0] : "")).join("");
     if (!out.trim()) throw new Error("Couldn't translate that.");
   }
-  cache.set(key, out.trim());
-  return out.trim();
+  const clean = out.trim();
+  cache.set(key, clean);
+  writeSaved(from, to, text, clean);
+  return clean;
 }
 async function reader(){
   const code = lang(fromEl.value).tess;
@@ -611,9 +757,88 @@ $("vStart").onclick = () => {
 $("vStop").onclick = () => {
   try { if (voiceRec) voiceRec.stop(); } catch (e) {}
 };
-window.addEventListener("offline", () => { $("net").textContent = "Offline"; });
-window.addEventListener("online", () => { $("net").textContent = "Online"; });
-if (!navigator.onLine) $("net").textContent = "Offline";
+function paintChrome() {
+  $("netOn").classList.toggle("on", netMode === "online");
+  $("netOff").classList.toggle("on", netMode === "offline");
+  $("brandSub").textContent = tool === "voice" ? "Voice" : tool === "camera" ? "Camera" : "Scan";
+  const offline = netMode === "offline";
+  const hints = {
+    voice: offline ? "Offline. Phrasebook and lines saved on this phone." : "Tap Start, speak, then Stop",
+    camera: offline ? "Offline. Phrasebook and lines saved on this phone." : "Point at words. New lines are saved for offline.",
+    scan: offline ? "Offline. Phrasebook and lines saved on this phone." : "Photograph a page, then Translate"
+  };
+  $("hint").textContent = hints[tool] || "";
+  document.querySelectorAll("[data-panel]").forEach(el => el.classList.toggle("on", el.dataset.panel === tool));
+  document.querySelectorAll("[data-tool]").forEach(el => el.classList.toggle("on", el.dataset.tool === tool));
+}
+function showTool(id) {
+  if (tool === "voice" && id !== "voice" && voiceRec) {
+    const rec = voiceRec;
+    voiceRec = null;
+    voiceFinal = "";
+    rec.onend = null;
+    try { rec.abort ? rec.abort() : rec.stop(); } catch (e) {}
+    setVoiceUi(false);
+  }
+  if (id !== "camera" && stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    loopOn = false;
+    wanted = false;
+    openBtn.textContent = "Open camera";
+    openBtn.className = "go";
+    flipBtn.hidden = true;
+  }
+  tool = id;
+  saveDir();
+}
+$("netOn").onclick = () => { netMode = "online"; saveDir(); };
+$("netOff").onclick = () => { netMode = "offline"; saveDir(); };
+document.querySelectorAll("[data-tool]").forEach(btn => {
+  btn.onclick = () => showTool(btn.dataset.tool);
+});
+window.addEventListener("offline", () => { netMode = "offline"; saveDir(); });
+$("scanShot").onclick = () => $("scanFile").click();
+$("scanFile").onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  setError("");
+  setStatus("Reading the page…");
+  try {
+    const bitmap = await createImageBitmap(file);
+    const max = 1600;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const w = await reader();
+    const result = await enqueue(() => w.recognize(canvas));
+    const lines = linesFrom(result.data, canvas.width, canvas.height);
+    const text = lines.map(l => l.text).join("\n");
+    $("scanDraft").value = text;
+    setStatus(text ? "Check the words, then Translate" : "No words in that photo");
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Couldn't read that photo. Open Online once so the reader can download.");
+  }
+};
+$("scanGo").onclick = async () => {
+  const text = $("scanDraft").value.trim();
+  if (!text) { setError("Take a photo first, or type the words."); return; }
+  setError("");
+  setStatus("Translating…");
+  try {
+    const out = await translateText(text);
+    $("scanOut").hidden = false;
+    $("scanOut").textContent = out;
+    spoken = out;
+    setStatus("Scan");
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Couldn't translate that.");
+  }
+};
+paintChrome();
 </script>
 </body>
 </html>
