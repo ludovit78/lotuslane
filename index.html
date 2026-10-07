@@ -50,7 +50,17 @@ input,select{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:1p
 nav.bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:rgba(255,253,248,.96);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
 nav.bar button{border:0;background:0;min-width:56px;min-height:48px;color:var(--muted);font-weight:700;font-size:.68rem;display:flex;flex-direction:column;align-items:center}
 nav.bar button.on{color:var(--lotus)}
-a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
+@media (orientation: landscape) {
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  header{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  nav.bar{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  #leaflet{height:58vh}
+  h1{font-size:1.6rem}
+  .form{grid-template-columns:1fr 1fr 1fr}
+}
+@supports (padding: max(0px)) {
+  body{padding-left:max(12px, env(safe-area-inset-left));padding-right:max(12px, env(safe-area-inset-right))}
+}
 .hero{display:grid;gap:12px}
 .kicker{letter-spacing:.14em;text-transform:uppercase;font-size:.72rem;font-weight:700;color:var(--green)}
 </style>
@@ -562,7 +572,7 @@ function followMe(){
     map.setView(ll, 14);
   }, () => {}, {enableHighAccuracy:true, maximumAge:5000});
 }
-$("#mapMe").onclick = followMe;
+window.addEventListener("orientationchange", () => { if(map) setTimeout(()=>map.invalidateSize(), 300); });
 $("#locBtn").onclick = followMe;
 ["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
 async function rates(){
