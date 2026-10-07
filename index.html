@@ -123,6 +123,11 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
   <div id="split" class="grid"></div>
   <div id="list"></div>
   <div id="near" style="margin-top:12px"></div>
+  <div id="acbBox" class="box" style="margin-top:12px;background:#0b3b6e;color:#fff">
+    <h3>ACB bank and ATMs</h3>
+    <p class="meta" style="color:#dbeafe">Uses the place on your latest stay. Opens Maps — it does not invent a branch address.</p>
+    <div id="acbLinks"></div>
+  </div>
 </section>
 
 <section id="map" class="panel">
@@ -307,6 +312,21 @@ function renderPlan(){
     it.date = it.from;
     save(); renderPlan();
   });
+  renderAcb();
+}
+function renderAcb(){
+  const stays = state.diary.filter(i=>i.cat==="stay");
+  const stay = stays[stays.length-1];
+  const city = stay ? stay.place : "Hanoi";
+  const country = stay ? ((COUNTRIES.find(c=>c.id===stay.country)||{}).name||"Vietnam") : "Vietnam";
+  const q = encodeURIComponent("ACB ATM near "+city+" "+country);
+  const bank = encodeURIComponent("ACB bank near "+city+" "+country);
+  const box = $("#acbLinks");
+  if(!box) return;
+  box.innerHTML = `<p style="margin:8px 0">Nearest to <b>${esc(city)}</b></p>
+    <a class="btn s" href="https://maps.apple.com/?q=${q}" target="_blank">ACB ATMs</a>
+    <a class="btn s" href="https://www.google.com/maps/search/?api=1&query=${bank}" target="_blank">ACB branches</a>
+    <a class="btn s" href="https://maps.google.com/maps?q=${q}" target="_blank">Google ATM map</a>`;
 }
 function addLine(){
   const place = $("#dPlace").value.trim();
