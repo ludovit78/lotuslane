@@ -39,7 +39,12 @@ img.shot{object-fit:contain;background:#0c1612}
 .wait{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,36,28,.78);text-align:center;padding:24px}
 .status{min-height:28px;text-align:center;font-size:.85rem;color:#b7c7be;padding:8px 14px}
 .err{margin:0 14px;background:#e25d72;color:#fff;border-radius:14px;padding:10px 12px;font-size:.88rem}
-.dock{display:flex;gap:8px;align-items:center;padding:8px 14px calc(12px + env(safe-area-inset-bottom))}
+.dock{display:flex;gap:8px;align-items:center;padding:8px 14px 0}
+.dock.bottom{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.vcard{margin:8px 14px 0;background:var(--card);color:var(--ink);border-radius:16px;border-left:4px solid var(--green);padding:12px 14px}
+.vcard .src{color:var(--muted);font-size:.85rem}
+.vcard .out{font-weight:700;font-size:1.05rem;margin-top:4px}
+button:disabled{opacity:.4}
 .ghost,.go{flex:1;font-weight:750;padding:0 12px}
 .ghost{background:#efe6d6;color:var(--ink)}
 .go{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff}
@@ -75,12 +80,20 @@ img.shot{object-fit:contain;background:#0c1612}
       <p style="margin-top:14px">Hold a menu or a sign steady. Words translate as they settle. The first language download takes a moment.</p>
     </div>
   </div>
+  <div class="vcard" id="vcard" hidden>
+    <div class="src" id="vHeard"></div>
+    <div class="out" id="vOut"></div>
+  </div>
   <p class="status" id="status">Point at words</p>
   <p class="err" id="error" hidden></p>
   <div class="dock">
     <button type="button" class="ghost" id="photo">Photo</button>
     <button type="button" class="go" id="open">Open camera</button>
     <button type="button" class="ghost" id="flip" hidden>Flip</button>
+  </div>
+  <div class="dock bottom">
+    <button type="button" class="go" id="vStart">Start</button>
+    <button type="button" class="ghost" id="vStop" disabled>Stop</button>
   </div>
   <p class="sr" id="live" aria-live="polite"></p>
   <input id="file" class="sr" type="file" accept="image/*"/>
@@ -516,6 +529,87 @@ $("speak").onclick = () => {
   u.lang = lang(toEl.value).say;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+};
+const VoiceRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voiceRec = null;
+let voiceFinal = "";
+function showVoice(heard, out) {
+  const card = $("vcard");
+  card.hidden = false;
+  $("vHeard").textContent = heard;
+  $("vOut").textContent = out || "";
+  $("vOut").hidden = !out;
+}
+function setVoiceUi(on) {
+  $("vStart").disabled = on;
+  $("vStop").disabled = !on;
+  $("vStop").className = on ? "go" : "ghost";
+}
+async function finishVoice(said) {
+  showVoice(said, "…");
+  setStatus("Translating…");
+  try {
+    const out = await translateText(said);
+    showVoice(said, out);
+    spoken = out;
+    setStatus("Tap Start and speak");
+    setError("");
+    if (window.speechSynthesis) {
+      const u = new SpeechSynthesisUtterance(out.slice(0, 400));
+      u.lang = lang(toEl.value).say;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }
+  } catch (err) {
+    showVoice(said, "");
+    setError(err instanceof Error ? err.message : "Couldn't translate that.");
+    setStatus("Tap Start and speak");
+  }
+}
+$("vStart").onclick = () => {
+  if (!VoiceRec) {
+    setError("This browser can't listen. Use the camera, or open the page in Safari.");
+    return;
+  }
+  const rec = new VoiceRec();
+  voiceRec = rec;
+  voiceFinal = "";
+  rec.lang = lang(fromEl.value).say;
+  rec.interimResults = true;
+  rec.continuous = true;
+  rec.onresult = (event) => {
+    let interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const bit = event.results[i][0].transcript;
+      if (event.results[i].isFinal) voiceFinal += bit;
+      else interim += bit;
+    }
+    showVoice((voiceFinal + interim).trim() || "Listening…", "");
+  };
+  rec.onerror = (event) => {
+    if (event.error === "aborted" || event.error === "no-speech") return;
+    setVoiceUi(false);
+    setError(event.error === "not-allowed" ? "Microphone permission is off." : "Listening failed. Tap Start again.");
+  };
+  rec.onend = () => {
+    setVoiceUi(false);
+    voiceRec = null;
+    const said = voiceFinal.trim();
+    if (said) void finishVoice(said);
+    else setStatus("Tap Start and speak");
+  };
+  try {
+    rec.start();
+    setVoiceUi(true);
+    setError("");
+    showVoice("Listening…", "");
+    setStatus("Listening — tap Stop when you finish");
+  } catch (e) {
+    setError("Couldn't start the microphone.");
+  }
+};
+$("vStop").onclick = () => {
+  try { if (voiceRec) voiceRec.stop(); } catch (e) {}
 };
 window.addEventListener("offline", () => { $("net").textContent = "Offline"; });
 window.addEventListener("online", () => { $("net").textContent = "Online"; });
