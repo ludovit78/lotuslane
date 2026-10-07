@@ -7,8 +7,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#0c3b2e",
-  "theme_color": "#0c3b2e",
+  "background_color": "#f6efe4",
+  "theme_color": "#0c6b4f",
   "lang": "en",
   "categories": ["travel", "lifestyle"],
   "icons": [

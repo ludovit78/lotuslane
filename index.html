@@ -4,8 +4,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#0c3b2e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="LotusLane"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="theme-color" content="#f6efe4"/>
 <title>LotusLane</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
@@ -13,7 +15,8 @@
 <style>
 :root{--ink:#14241c;--muted:#5d6e66;--green:#0c6b4f;--teal:#0e8f9a;--gold:#e09a2b;--lotus:#e25d72;--bg:#f6efe4;--card:#fffdf9;--line:#e6d7c2;--r:20px}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Source Sans 3",system-ui,sans-serif;color:var(--ink);background:radial-gradient(700px 400px at 0 0,rgba(14,143,154,.18),transparent 50%),radial-gradient(600px 380px at 100% 0,rgba(226,93,114,.16),transparent 46%),var(--bg);padding-bottom:calc(78px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+html,body{min-height:100%;background:#f6efe4}
+body{font-family:"Source Sans 3",system-ui,sans-serif;color:var(--ink);background:radial-gradient(700px 400px at 0 0,#b7e7e4,transparent 50%),radial-gradient(600px 380px at 100% 0,#f6c9d1,transparent 46%),radial-gradient(500px 300px at 50% 100%,#f6e0b8,transparent 40%),#f6efe4;padding-bottom:calc(78px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
 h1,h2,h3{font-family:Fraunces,Georgia,serif;letter-spacing:-.02em}
 button,input,select{font:inherit;font-size:16px}
 .wrap{width:min(980px,calc(100% - 24px));margin:0 auto}
@@ -80,6 +83,10 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
       <div><label>Currency</label><select id="cur"></select></div>
     </div>
     <button class="btn" type="button" id="saveBudget">Save budget</button>
+    <div class="form" style="margin-top:8px">
+      <button class="btn s" type="button" id="exportJson">Download trip file</button>
+      <button class="btn s" type="button" id="exportTxt">Export summary</button>
+    </div>
     <div id="remain" class="ok">Set a budget, then add bookings.</div>
   </div>
   <div class="box" style="margin-top:12px">
@@ -432,7 +439,20 @@ $("#savePlace").onclick = () => {
 function renderVisa(){
   $("#visaOut").innerHTML = COUNTRIES.map(c=>`<div class="box" style="margin:8px 0"><b>${c.flag} ${c.name}</b><p>${c.visa}</p>${Object.entries(c.links).map(([k,u])=>`<a href="${u}" target="_blank">${k}</a>`).join(" · ")}</div>`).join("");
 }
+function download(name, text, type){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 $("#saveBudget").onclick=()=>{ state.tripBudgetUsd=(+$("#tripBudget").value||0)/rate(state.cur); state.homeDate=$("#homeDate").value; save(); renderPlan(); };
+$("#exportJson").onclick = () => download("lotuslane-trip.json", JSON.stringify(state, null, 2), "application/json");
+$("#exportTxt").onclick = () => {
+  const lines = ["LotusLane trip", "Back in UK: " + (state.homeDate || ""), ""];
+  state.diary.forEach(i => lines.push(`${i.from || i.date} – ${i.to || ""}  ${i.cat}  ${i.place}  ${money(i.usd || 0)}`));
+  download("lotuslane-trip.txt", lines.join("\n"), "text/plain");
+};
 $("#homeDate").onchange=()=>{ state.homeDate=$("#homeDate").value; save(); renderPlan(); };
 if(state.homeDate) $("#homeDate").value = state.homeDate;
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
