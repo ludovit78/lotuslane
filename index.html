@@ -163,6 +163,15 @@ a.btn{display:inline-block;width:auto;text-decoration:none;margin:4px 6px 0 0}
   <div id="mapBox" class="box" style="margin-top:10px;display:none"></div>
   <div id="playOut"></div>
   <div class="box" style="margin-top:12px">
+    <h3>Currency calculator</h3>
+    <p class="meta">Live rates for every country in the app. Type an amount in the currency you are holding.</p>
+    <div class="form">
+      <div><label>Amount</label><input id="calcAmt" type="number" value="100000"/></div>
+      <div><label>This is</label><select id="calcFrom"></select></div>
+    </div>
+    <div id="calcOut" class="grid"></div>
+  </div>
+  <div class="box" style="margin-top:12px">
     <h3>My restaurants & shops</h3>
     <p class="meta">Saved on this phone. They stay until you delete them.</p>
     <div class="form">
@@ -217,7 +226,17 @@ const PLACES = {
   kh:{beach:["Otres","Koh Rong"],food:["Siem Reap vegan kitchens"],nature:["Tonle Sap"],see:["Angkor Wat"],shop:["Psar Chaa"],bike:["Siem Reap scooters"]},
   jp:{beach:["Okinawa"],food:["Vegan ramen, Tokyo"],nature:["Nikko","Kamakura"],see:["Kyoto temples"],shop:["Don Quijote"],bike:["Not usual in cities"]}
 };
-const NEAR = ["Bangkok","Chiang Mai","Hanoi","Ho Chi Minh City","Siem Reap","Ubud","Kuala Lumpur","Singapore","Tokyo","Taipei","Seoul","Delhi","Kathmandu","Colombo","Tbilisi"];
+const VN = {
+  Hanoi: {vegan:["Bao An vegan banh mi, Truc Lac alley","Loving Hut buffet, Au Co, often under 100,000 dong","Uu Dam Chay","Quan chay around Hoan Kiem"], market:["Dong Xuan market, fruit and veg","Hom market","Long Bien night market, weekends","Old Quarter night market"], bike:["Old Quarter hire shops, check licence rules"], massage:["Old Quarter foot-massage streets"], info:"Tourist info near Hoan Kiem"},
+  Sapa: {vegan:["Ask guesthouses for rau or chay","Town-centre cafes that mark vegan","Sapa market vegetable stalls"], market:["Sapa market, fruit and hill produce","Bac Ha Sunday market"], bike:["Town hire for the valley, steep roads"], massage:["Town-centre spas"], info:"Sapa visitor desk in town"},
+  "Ho Chi Minh City": {vegan:["District 1 chay canteens","Hum Vegetarian","District 3 vegan cafes"], market:["Ben Thanh market fruit, night market outside","Binh Tay, Cholon"], bike:["Grab bikes are safer than self-hire in District 1"], massage:["Pham Ngu Lao and Bui Vien foot spas"], info:"Tourist desk near Ben Thanh"},
+  Hue: {vegan:["Com chay near the citadel and pagodas","Lunar-day vegetarian kitchens"], market:["Dong Ba market, veg and fruit","An Cuu night stalls"], bike:["Hue riverside hire, citadel loop"], massage:["Perfume River hotel spas and street foot massage"], info:"Citadel visitor entrance"},
+  "Da Nang": {vegan:["Shamballa, Tran Hung Dao, Bib Gourmand, not the cheapest","Quan Chay Thien Duyen, Hoang Dieu, local prices","Beach-road chay stalls"], market:["Han market","Con market fruit"], bike:["My Khe and An Thuong hire shops"], massage:["My Khe beachfront massage"], info:"Han market tourist corner"},
+  "Hoi An": {vegan:["Le Hoi banh mi chay, old town, often about 15,000 dong","Chickpea Eatery","Ancient-town chay kitchens"], market:["Hoi An central market, morning fruit and veg","An Bang night stalls"], bike:["Old-town bicycle and scooter hire"], massage:["Nguyen Thai Hoc spa street"], info:"Old Town ticket booths"},
+  "Vung Tau": {vegan:["Front-beach com chay and pagoda kitchens","Ask for chay on the seafood strip"], market:["Vung Tau market, morning produce","Back Beach night stalls"], bike:["Front Beach hire for the coast road"], massage:["Front Beach hotel spas"], info:"Beachfront visitor signs"},
+  "Ninh Binh": {vegan:["Tam Coc guesthouse kitchens, request chay","Ninh Binh town com chay"], market:["Ninh Binh market","Tam Coc village fruit stalls"], bike:["Tam Coc hire for the rice-paddy loop"], massage:["Tam Coc homestay massage"], info:"Tam Coc boat ticket desk"}
+};
+
 let FX = {USD:1,GBP:0.78,EUR:0.92,THB:34,VND:25000,IDR:15800,MYR:4.4,PHP:57,SGD:1.3,INR:84,JPY:149,KRW:1350};
 let state = JSON.parse(localStorage.getItem("lotuslane_v2")||"{}");
 state.diary = state.diary||[]; state.nat = state.nat||"SK"; state.cur = state.cur||"EUR";
@@ -388,28 +407,52 @@ function scout(){
     <a class="btn s" href="https://www.agoda.com/search?city=${encodeURIComponent(t)}" target="_blank">Agoda rooms</a>`;
 }
 function showPlaceLists(q){
-  const query = (q||$("#placeQ").value||"Bangkok").trim();
-  const hit = COUNTRIES.find(c => query.toLowerCase().includes(c.name.toLowerCase()));
-  const id = hit ? hit.id : "th";
-  const p = PLACES[id] || {};
+  const query = (q||$("#placeQ").value||"Hanoi").trim();
+  const vn = Object.keys(VN).find(k => query.toLowerCase().includes(k.toLowerCase().split(" ")[0].toLowerCase()) || k.toLowerCase().includes(query.toLowerCase()));
   const enc = encodeURIComponent(query);
   const apps = [
-    ["HappyCow vegan", `https://www.happycow.net/searchmap?s=${enc}`],
+    ["HappyCow", `https://www.happycow.net/searchmap?s=${enc}`],
     ["Google Maps", `https://www.google.com/maps/search/?api=1&query=${enc}`],
     ["Apple Maps", `https://maps.apple.com/?q=${enc}`],
-    ["Klook", `https://www.klook.com/en-GB/search/result/?query=${enc}`],
-    ["Tripadvisor", `https://www.tripadvisor.com/Search?q=${enc}`],
-    ["Guru Maps", `https://gurumaps.app/`]
+    ["Klook", `https://www.klook.com/en-GB/search/result/?query=${enc}`]
   ];
-  $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${query}</h3>
-    <p><b>Beaches</b> ${(p.beach||["Search Maps for beaches near "+query]).join(" · ")}</p>
-    <p><b>Vegan food</b> ${(p.food||["HappyCow for "+query]).join(" · ")}</p>
-    <p><b>Markets</b> ${(p.shop||["Local market"]).join(" · ")}</p>
-    <p><b>Attractions</b> ${(p.see||["Old town"]).join(" · ")}</p>
-    <p><b>Tourist info</b> Visitor centre / TAT office in ${query}. Search Maps for “tourist information”.</p>
-    <div style="margin-top:8px">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}</div>
-  </div>`;
-  $("#near").innerHTML = $("#playOut").innerHTML;
+  if(vn){
+    const p = VN[vn];
+    $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${vn}</h3>
+      <p class="meta">Common budget picks. Ratings change — open HappyCow before you go.</p>
+      <p><b>Vegan, on a budget</b> ${p.vegan.join(" · ")}</p>
+      <p><b>Veg, fruit and street markets</b> ${p.market.join(" · ")}</p>
+      <p><b>Motorbike hire</b> ${p.bike.join(" · ")}</p>
+      <p><b>Massage</b> ${p.massage.join(" · ")}</p>
+      <p><b>Tourist info</b> ${p.info}</p>
+      <div style="margin-top:8px">${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}
+      <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent("night market "+vn)}" target="_blank">Night markets</a>
+      <a class="btn s" href="https://maps.apple.com/?q=${encodeURIComponent("motorbike rental "+vn)}" target="_blank">Bike hire map</a></div>
+    </div><div class="tabs" style="margin-top:8px">${Object.keys(VN).map(k=>`<button class="chip" type="button" data-vn="${k}">${k}</button>`).join("")}</div>`;
+    $$("[data-vn]").forEach(b=>b.onclick=()=>{ $("#placeQ").value=b.dataset.vn; showPlaceLists(b.dataset.vn); });
+  } else {
+    $("#playOut").innerHTML = `<div class="box" style="margin-top:10px"><h3>${query}</h3><p>Pick a Vietnam stop or search Maps.</p>${apps.map(([n,u])=>`<a class="btn s" href="${u}" target="_blank">${n}</a>`).join(" ")}</div>
+      <div class="tabs">${Object.keys(VN).map(k=>`<button class="chip" type="button" data-vn="${k}">${k}</button>`).join("")}</div>`;
+    $$("[data-vn]").forEach(b=>b.onclick=()=>{ $("#placeQ").value=b.dataset.vn; showPlaceLists(b.dataset.vn); });
+  }
+  renderCalc();
+}
+function renderCalc(){
+  const from = $("#calcFrom");
+  if(from && !from.dataset.ready){
+    CUR.forEach(([c,s,land])=>from.append(new Option(s+" "+c+" · "+land, c)));
+    from.value = state.cur; from.dataset.ready="1";
+    from.onchange = renderCalc;
+    $("#calcAmt").addEventListener("input", renderCalc);
+  }
+  const raw = +($("#calcAmt")&&$("#calcAmt").value)||0;
+  const code = (from&&from.value)||state.cur;
+  const usd = raw / (rate(code)||1);
+  $("#calcOut").innerHTML = CUR.map(([c,s,land])=>{
+    const n = usd*(rate(c)||1);
+    const shown = (c==="VND"||c==="IDR"||c==="KRW") ? Math.round(n).toLocaleString() : n.toFixed(2);
+    return `<div class="box"><span class="meta">${land}</span><b>${s}${shown}</b><span class="meta">${c}</span></div>`;
+  }).join("");
 }
 function renderSaved(){
   state.saved = state.saved || [];
