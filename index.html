@@ -32,8 +32,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(255,250,242,.9);backdrop
 .form{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0}
 .chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 10px;font-weight:700;cursor:pointer;font-size:.78rem;line-height:1.2;position:static;max-width:100%}
 .chip.on{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;border-color:transparent}
-.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
-.tabs .chip{width:100%;min-height:44px;white-space:normal}
+.tabs{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0;clear:both}
+.tabs .chip{width:100%;min-height:44px;white-space:normal;display:block;text-align:center}
+#scoutLinks{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+#scoutLinks a{display:block;width:100%;margin:0}
 .fx{background:#1e4d86;border-radius:18px;padding:10px;color:#10233f}
 .fx-row{display:grid;grid-template-columns:1fr 86px;gap:8px;margin-bottom:8px}
 .fx-card{background:#fff;border-radius:14px;padding:10px;display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center}
@@ -62,7 +64,7 @@ label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:upper
 input,select{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .btn{border:0;border-radius:12px;padding:12px 14px;font-weight:700;background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;cursor:pointer;width:100%}
 .btn.s{background:#efe6d6;color:var(--ink)}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.hero{display:grid;gap:12px}
 .stat b{display:block;font-size:1.2rem}
 .ok{background:#e9f7ef;border:1px solid #b7e0c8;border-radius:14px;padding:12px;margin:8px 0}
 .bad{background:#fdecec;border:1px solid #f2b6b6;border-radius:14px;padding:12px;margin:8px 0}
