@@ -83,7 +83,7 @@ button:disabled{opacity:.4}
       <button type="button" class="swap" id="swap" aria-label="Swap languages">⇄</button>
       <select id="to" aria-label="Language you read"></select>
     </div>
-    <div class="hint"><span id="hint">Tap Start, speak, then Stop</span></div>
+    <div class="hint"><span id="hint">Tap Start, speak, then Stop</span><button type="button" class="ghost" id="share" style="flex:none;min-height:36px;padding:0 14px">Share</button></div>
   </header>
   <section class="panel on" data-panel="voice">
     <div class="vcard" id="vcard">
@@ -470,6 +470,48 @@ async function copy(text){
   try { await navigator.clipboard.writeText(text); setStatus("Copied"); }
   catch (e) { setError("Couldn't copy. Select the words instead."); }
 }
+async function shareNow(){
+  const fromName = lang(fromEl.value).name;
+  const toName = lang(toEl.value).name;
+  let source = "";
+  let out = "";
+  if (tool === "voice") {
+    source = ($("vHeard").textContent || "").trim();
+    if (!source || source === "Tap Start and speak" || source === "Listening…") source = "";
+    out = ($("vOut").textContent || "").trim();
+  } else if (tool === "scan") {
+    source = ($("scanDraft").value || "").trim();
+    out = ($("scanOut").textContent || "").trim();
+  } else {
+    const sampleHidden = $("sample").hidden;
+    if (!sampleHidden) {
+      source = "Phở bò tái";
+      out = "Rare beef pho";
+    } else {
+      out = (spoken || "").trim();
+    }
+  }
+  const lines = [];
+  if (source) lines.push(fromName + "\n" + source);
+  if (out) lines.push(toName + "\n" + out);
+  const text = lines.join("\n\n") || "LotusLane translator";
+  const url = "https://ludovit78.github.io/lotuslane/lens.html";
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "LotusLane", text, url });
+      setStatus("Shared");
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text + "\n" + url);
+    setStatus("Copied. Paste it to share.");
+  } catch (err) {
+    setError("Couldn't open share. Select the words instead.");
+  }
+}
 function pair(sources, translated){
   const parts = translated.split(/\n+/).map(s => s.trim()).filter(Boolean);
   if (sources.length === 1) return [translated.trim()];
@@ -794,6 +836,7 @@ function showTool(id) {
 }
 $("netOn").onclick = () => { netMode = "online"; saveDir(); };
 $("netOff").onclick = () => { netMode = "offline"; saveDir(); };
+$("share").onclick = () => { void shareNow(); };
 document.querySelectorAll("[data-tool]").forEach(btn => {
   btn.onclick = () => showTool(btn.dataset.tool);
 });
