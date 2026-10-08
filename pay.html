@@ -82,36 +82,42 @@ input,select,textarea{width:100%;margin-top:4px;padding:12px;border-radius:12px;
       <div class="row"><span>Note</span><b id="billNote"></b></div>
       <label for="amount">Amount in dong</label>
       <input id="amount" inputmode="decimal" placeholder="180000"/>
-      <label for="memo">Note for Wise</label>
+      <label for="memo">Note</label>
       <input id="memo" maxlength="25" placeholder="lunch"/>
-      <label for="fromAcct">Pay from</label>
-      <select id="fromAcct"></select>
-      <div class="dock">
-        <button type="button" class="go" id="pay">Pay with Wise</button>
+      <div class="card" id="cardFace" style="background:linear-gradient(145deg,#10281f,#0e8f9a);color:#f6efe4">
+        <p class="meta" style="color:#d7f5e8">Pay from Wise card</p>
+        <b id="payCardLine">Add a Wise card in the wallet</b>
+        <p id="payCardBal" style="margin-top:6px"></p>
       </div>
-      <p class="note">Wise sends the dong. LotusLane opens Wise with this slip and does not see your Wise password.</p>
+      <div class="dock">
+        <button type="button" class="go" id="pay">Pay with Wise card</button>
+      </div>
+      <p class="note">Dong is taken off the Wise card balance in this app. Wise does not give Vietnamese bank details, so the card is how you pay.</p>
     </div>
   </section>
 
   <section class="panel" data-panel="wallet">
     <div class="card">
-      <h2>Wise accounts</h2>
-      <p class="meta">Add the Wise account you pay from. A nickname and the email on that Wise profile is enough.</p>
+      <h2>Wise account</h2>
+      <p class="meta">Same wallet as LotusLane. Dong has no bank details. It sits on the card.</p>
       <label for="nick">Name</label>
-      <input id="nick" placeholder="Travel euro"/>
+      <input id="nick" placeholder="Your name"/>
       <label for="email">Wise email</label>
       <input id="email" type="email" placeholder="you@email.com" autocomplete="email"/>
-      <label for="cur">Currency you hold there</label>
-      <select id="cur">
-        <option value="VND">₫ VND · Vietnamese dong</option>
-        <option>EUR</option><option>GBP</option><option>USD</option><option>AUD</option><option>SGD</option><option>THB</option>
-      </select>
-      <label for="bal">Balance</label>
+      <div class="dock"><button type="button" class="go" id="addWise">Save Wise account</button></div>
+    </div>
+    <div class="card">
+      <h2>Wise card</h2>
+      <p class="meta">Last 4 digits only. This is the dong you can spend here.</p>
+      <label for="cardName">Name on card</label>
+      <input id="cardName" placeholder="L RAZIOK" autocomplete="off"/>
+      <label for="cardLast4">Last 4 digits</label>
+      <input id="cardLast4" inputmode="numeric" maxlength="4" placeholder="4242" autocomplete="off"/>
+      <label for="bal">Dong on the card</label>
       <input id="bal" inputmode="decimal" placeholder="5000000"/>
-      <div class="dock"><button type="button" class="go" id="addWise">Add Wise account</button></div>
+      <div class="dock"><button type="button" class="go" id="saveCard">Save Wise card</button></div>
     </div>
     <div id="wiseList"></div>
-    <p class="note">Accounts stay on this phone. Delete one here any time. Nothing is sent to LotusLane.</p>
   </section>
 
   <section class="panel" data-panel="paid">
@@ -134,7 +140,7 @@ const BANKS = {
   "970400":"Saigonbank","970421":"VRB","970458":"UOB","970457":"Woori","970442":"Hong Leong",
   "970448":"OCB"
 };
-const WISE_KEY = "lotuslane.wise.v1";
+const WISE_V2 = "lotuslane.wise.v2";
 const PAY_KEY = "lotuslane.pays.v1";
 const $ = id => document.getElementById(id);
 let stream = null;
@@ -142,6 +148,16 @@ let loopOn = false;
 let detector = null;
 let bill = null;
 
+function loadWise(){
+  try {
+    const v = JSON.parse(localStorage.getItem(WISE_V2) || "null");
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      return { name: v.name || "", email: v.email || "", card: v.card || null, balances: Array.isArray(v.balances) ? v.balances : [] };
+    }
+  } catch (e) {}
+  return { name: "", email: "", card: null, balances: [] };
+}
+function saveWise(w){ localStorage.setItem(WISE_V2, JSON.stringify(w)); }
 function load(key) {
   try { const v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v : []; }
   catch (e) { return []; }
@@ -233,52 +249,56 @@ function showBill(item) {
   $("billNote").textContent = item.note || "None";
   $("amount").value = item.amount || "";
   $("memo").value = item.note || "";
-  fillAccounts();
+  paintCard();
   say(item.bank + " " + item.account);
   setError("");
 }
-function fillAccounts() {
-  const list = load(WISE_KEY);
-  const sel = $("fromAcct");
-  const prev = sel.value;
-  sel.replaceChildren();
-  if (!list.length) {
-    const o = document.createElement("option");
-    o.value = "";
-    o.textContent = "Add a Wise account first";
-    sel.append(o);
-    return;
-  }
-  for (const a of list) {
-    const o = document.createElement("option");
-    o.value = a.id;
-    o.textContent = a.name + " · " + a.currency;
-    sel.append(o);
-  }
-  if (list.some(a => a.id === prev)) sel.value = prev;
+function paintCard() {
+  const wise = loadWise();
+  const card = wise.card;
+  $("payCardLine").textContent = card && card.last4
+    ? "•••• " + card.last4 + (card.holder ? " · " + card.holder : "")
+    : "Add a Wise card in Wallet";
+  $("payCardBal").textContent = card ? money(card.vnd) + " left on the card" : "Dong is spent from the card, not from bank details.";
+  if (document.activeElement !== $("nick")) $("nick").value = wise.name || "";
+  if (document.activeElement !== $("email")) $("email").value = wise.email || "";
 }
 function renderWise() {
+  const wise = loadWise();
   const box = $("wiseList");
   box.replaceChildren();
-  for (const a of load(WISE_KEY)) {
+  if (wise.card && wise.card.last4) {
     const row = document.createElement("div");
-    row.className = "item";
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = "<b></b><p class='meta'></p>";
-    card.querySelector("b").textContent = a.name + " · " + a.currency;
-    const bal = a.balance ? " · " + a.balance + " " + a.currency : "";
-    card.querySelector("p").textContent = a.email + bal;
+    row.className = "card";
+    const title = document.createElement("b");
+    title.textContent = "Wise card •••• " + wise.card.last4;
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent = (wise.card.holder || wise.name || "Wise") + " · " + money(wise.card.vnd);
     const del = document.createElement("button");
     del.type = "button";
-    del.className = "del";
-    del.textContent = "Delete";
+    del.className = "ghost";
+    del.style.marginTop = "8px";
+    del.textContent = "Remove card";
     del.onclick = () => {
-      store(WISE_KEY, load(WISE_KEY).filter(x => x.id !== a.id));
+      const next = loadWise();
+      next.card = null;
+      saveWise(next);
       renderWise();
-      fillAccounts();
+      paintCard();
     };
-    row.append(card, del);
+    row.append(title, meta, del);
+    box.append(row);
+  }
+  for (const a of wise.balances) {
+    const row = document.createElement("div");
+    row.className = "card";
+    const title = document.createElement("b");
+    title.textContent = a.currency + " · " + a.amount;
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent = "Bank details in Wise. Not used for dong.";
+    row.append(title, meta);
     box.append(row);
   }
 }
@@ -435,56 +455,73 @@ $("addWise").onclick = () => {
     say("Add a name and the Wise email.");
     return;
   }
-  const list = load(WISE_KEY);
-  list.unshift({ id: Date.now().toString(36), name, email, currency: $("cur").value, balance: $("bal").value.trim() });
-  store(WISE_KEY, list);
-  $("nick").value = "";
-  $("email").value = "";
-  $("bal").value = "";
+  const wise = loadWise();
+  wise.name = name;
+  wise.email = email;
+  saveWise(wise);
   renderWise();
-  fillAccounts();
+  paintCard();
   say("Wise account saved on this phone");
 };
+$("saveCard").onclick = () => {
+  const holder = $("cardName").value.trim();
+  const end = $("cardLast4").value.replace(/\D/g, "").slice(-4);
+  if (!holder || end.length !== 4) {
+    say("Name on the card, and only the last 4 digits.");
+    return;
+  }
+  const wise = loadWise();
+  wise.card = { holder, last4: end, vnd: $("bal").value.trim() || "0" };
+  saveWise(wise);
+  renderWise();
+  paintCard();
+  say("Wise card saved. Dong is on the card.");
+};
+$("cardLast4").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+});
 $("pay").onclick = async () => {
   if (!bill) return;
-  const accounts = load(WISE_KEY);
-  const account = accounts.find(a => a.id === $("fromAcct").value);
-  if (!account) {
-    setError("Add a Wise account in Wallet first.");
+  const wise = loadWise();
+  if (!wise.card || !wise.card.last4) {
+    setError("Add the Wise card first. Vietnamese dong is on the card, not in bank details.");
     showTab("wallet");
     return;
   }
   const amount = $("amount").value.trim();
-  if (!amount || Number(amount.replace(/[^\d.]/g, "")) <= 0) {
+  const amountN = Number(String(amount).replace(/[^\d.]/g, ""));
+  if (!amountN) {
     setError("Type the amount in dong.");
     return;
   }
-  const item = {
-    ...bill,
-    amount,
-    note: $("memo").value.trim() || bill.note
-  };
-  const text = slip(item, account);
+  const have = Number(String(wise.card.vnd || "").replace(/[^\d.]/g, "")) || 0;
+  if (amountN > have) {
+    setError("The Wise card has " + money(have) + ". That is not enough.");
+    return;
+  }
+  wise.card.vnd = String(Math.round(have - amountN));
+  saveWise(wise);
+  const item = { ...bill, amount: String(amountN), note: $("memo").value.trim() || bill.note };
   const payment = {
     id: Date.now().toString(36),
     at: Date.now(),
     bank: item.bank,
     account: item.account,
-    amount,
+    amount: item.amount,
     note: item.note,
-    fromName: account.name,
-    slip: text,
-    paid: false
+    fromName: "Wise card •••• " + wise.card.last4,
+    slip: slip(item, { name: wise.card.holder, email: wise.email || "", currency: "VND" }),
+    paid: true
   };
   store(PAY_KEY, [payment, ...load(PAY_KEY)]);
   renderPays();
+  paintCard();
   setError("");
-  say("Opening Wise");
-  await openWise(payment);
+  say("Paid " + money(amountN) + ". " + money(wise.card.vnd) + " left on the card.");
   showTab("paid");
 };
 document.querySelectorAll("[data-tab]").forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
-fillAccounts();
+paintCard();
 renderWise();
 renderPays();
 </script>
