@@ -79,10 +79,6 @@ button:disabled{opacity:.4}
   <header class="top">
     <div class="row">
       <div class="brand"><a href="index.html">LotusLane</a><small id="brandSub">Voice</small></div>
-      <div class="seg" role="group" aria-label="Connection">
-        <button type="button" id="netOn">Online</button>
-        <button type="button" id="netOff">Offline</button>
-      </div>
     </div>
     <div class="langs">
       <select id="from" aria-label="Language on the page"></select>
@@ -168,17 +164,12 @@ LANGS.forEach(l => {
   fromEl.add(new Option(l.name, l.id));
   toEl.add(new Option(l.name, l.id));
 });
-let netMode = "online";
 let tool = "voice";
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem("lotuslane.lens") || "{}"); } catch (e) {}
 fromEl.value = LANGS.some(l => l.id === saved.from) ? saved.from : "vi";
 toEl.value = LANGS.some(l => l.id === saved.to) ? saved.to : "en";
 if (saved.tool === "voice" || saved.tool === "camera" || saved.tool === "scan") tool = saved.tool;
-if (saved.net === "online" || saved.net === "offline") netMode = saved.net;
-const sharedMode = localStorage.getItem("lotuslane.mode");
-if (sharedMode === "online" || sharedMode === "offline") netMode = sharedMode;
-if (!navigator.onLine) netMode = "offline";
 if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
 
 const cache = new Map();
@@ -202,8 +193,7 @@ let spoken = "Rare beef pho";
 
 function lang(id){ return LANGS.find(l => l.id === id); }
 function saveDir(){
-  localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value, tool:tool, net:netMode}));
-  localStorage.setItem("lotuslane.mode", netMode);
+  localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value, tool:tool}));
   paintChrome();
 }
 saveDir();
@@ -340,10 +330,18 @@ async function translateText(text){
   const key = from + ">" + to + ":" + norm(text);
   if (cache.has(key)) return cache.get(key);
   const packed = lookupOffline(text, from, to);
-  if (netMode === "offline" || !navigator.onLine) {
-    if (packed) { cache.set(key, packed); return packed; }
-    throw new Error("Not in the offline pack. Switch to Online once. That line is saved on this phone.");
+  if (navigator.onLine) {
+    try {
+      const clean = await translateOnline(text, from, to);
+      cache.set(key, clean);
+      writeSaved(from, to, text, clean);
+      return clean;
+    } catch (e) {}
   }
+  if (packed) { cache.set(key, packed); return packed; }
+  throw new Error(navigator.onLine ? "Couldn't translate that. Try again in a moment." : "No signal, and that line is not saved on this phone yet.");
+}
+async function translateOnline(text, from, to){
   const q = text.slice(0, 450);
   const pair = id => id === "zh" ? "zh-CN" : id;
   let out = "";
@@ -367,10 +365,7 @@ async function translateText(text){
     out = (json[0] || []).map(seg => (Array.isArray(seg) ? seg[0] : "")).join("");
     if (!out.trim()) throw new Error("Couldn't translate that.");
   }
-  const clean = out.trim();
-  cache.set(key, clean);
-  writeSaved(from, to, text, clean);
-  return clean;
+  return out.trim();
 }
 async function reader(){
   const code = lang(fromEl.value).tess;
@@ -813,14 +808,11 @@ $("vStop").onclick = () => {
   try { if (voiceRec) voiceRec.stop(); } catch (e) {}
 };
 function paintChrome() {
-  $("netOn").classList.toggle("on", netMode === "online");
-  $("netOff").classList.toggle("on", netMode === "offline");
   $("brandSub").textContent = tool === "voice" ? "Voice" : tool === "camera" ? "Camera" : "Scan";
-  const offline = netMode === "offline";
   const hints = {
-    voice: offline ? "Offline. Phrasebook and lines saved on this phone." : "Tap Start, speak, then Stop",
-    camera: offline ? "Offline. Phrasebook and lines saved on this phone." : "Point at words. New lines are saved for offline.",
-    scan: offline ? "Offline. Phrasebook and lines saved on this phone." : "Photograph a page, then Translate"
+    voice: "Tap Start, speak, then Stop",
+    camera: "Point at words. A saved line is used if there is no signal.",
+    scan: "Photograph a page, then Translate"
   };
   $("hint").textContent = hints[tool] || "";
   document.querySelectorAll("[data-panel]").forEach(el => el.classList.toggle("on", el.dataset.panel === tool));
@@ -847,8 +839,6 @@ function showTool(id) {
   tool = id;
   saveDir();
 }
-$("netOn").onclick = () => { netMode = "online"; saveDir(); };
-$("netOff").onclick = () => { netMode = "offline"; saveDir(); };
 $("share").onclick = () => { void shareNow(); };
 const LIST_KEY = "lotuslane.saved.v1";
 function loadSaved() {
@@ -936,7 +926,6 @@ $("saveLine").onclick = saveLine;
 document.querySelectorAll("[data-tool]").forEach(btn => {
   btn.onclick = () => showTool(btn.dataset.tool);
 });
-window.addEventListener("offline", () => { netMode = "offline"; saveDir(); });
 $("scanShot").onclick = () => $("scanFile").click();
 $("scanFile").onchange = async (event) => {
   const file = event.target.files && event.target.files[0];
