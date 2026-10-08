@@ -659,12 +659,12 @@ $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
 $$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
 let meMarker, meCircle, watchId;
-function placeMe(pos){
+function placeMe(pos, approx){
   renderMap();
   if(!map) return;
   const lat = pos.coords.latitude, lon = pos.coords.longitude;
   const ll = [lat, lon];
-  const acc = Math.max(pos.coords.accuracy || 40, 8);
+  const acc = Math.max(pos.coords.accuracy || (approx ? 20000 : 40), 8);
   if(!meMarker){
     meCircle = L.circle(ll, {radius:acc, color:"#1d4ed8", weight:1, fillColor:"#60a5fa", fillOpacity:.18}).addTo(map);
     meMarker = L.circleMarker(ll, {radius:9, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1, weight:3}).addTo(map);
@@ -674,14 +674,17 @@ function placeMe(pos){
     meCircle.setRadius(acc);
   }
   const label = lat.toFixed(5)+", "+lon.toFixed(5);
-  meMarker.bindPopup("<b>You are here</b><br>"+label+"<br>± "+Math.round(acc)+" m");
+  const title = approx ? "Near your connection" : "You are here";
+  meMarker.bindPopup("<b>"+title+"</b><br>"+label+(approx ? "<br>Not GPS" : "<br>± "+Math.round(acc)+" m"));
   const note = $("#mapNote");
-  if(note) note.textContent = "You are here · "+label;
+  if(note && !approx) note.textContent = "You are here · "+label;
+  const zoom = approx ? 11 : 16;
   setTimeout(() => {
     map.invalidateSize();
-    map.setView(ll, 16);
+    map.setView(ll, zoom);
     meMarker.openPopup();
   }, 280);
+  if(approx) return;
   fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude="+lat+"&longitude="+lon+"&localityLanguage=en")
     .then(r => r.ok ? r.json() : null)
     .then(j => {
@@ -695,25 +698,38 @@ function placeMe(pos){
     })
     .catch(() => {});
 }
+function duckSteps(){
+  return "Settings → Privacy & Security → Location Services → DuckDuckGo → While Using the App. Turn Precise Location on, then tap Show my location again.";
+}
+function showApprox(note){
+  note.innerHTML = "DuckDuckGo blocked GPS. Looking up the area from your connection…";
+  fetch("https://ipwho.is/").then(r => r.json()).then(j => {
+    if(!j || !j.success || j.latitude == null) throw new Error("no");
+    placeMe({coords:{latitude:+j.latitude, longitude:+j.longitude, accuracy:20000}}, true);
+    const where = [j.city, j.region, j.country].filter(Boolean).join(", ");
+    note.innerHTML = "GPS is blocked in DuckDuckGo, so this pin is only the area of your connection"+(where ? " ("+where+")" : "")+". "+duckSteps()+" <a class=\"btn\" style=\"display:block;text-align:center;text-decoration:none;margin-top:8px\" href=\"https://maps.apple.com/?q=My%20Location\">Open the real pin in Apple Maps</a>";
+  }).catch(() => {
+    note.innerHTML = "DuckDuckGo blocked location. "+duckSteps()+" <a class=\"btn\" style=\"display:block;text-align:center;text-decoration:none;margin-top:8px\" href=\"https://maps.apple.com/?q=My%20Location\">Open the real pin in Apple Maps</a>";
+  });
+}
 function showMyLocation(){
   go("map");
   const note = $("#mapNote");
   if(!navigator.geolocation){
-    if(note) note.textContent = "This phone cannot share location.";
+    if(note) showApprox(note);
     return;
   }
   if(note) note.textContent = "Finding you…";
-  const opts = {enableHighAccuracy:true, timeout:20000, maximumAge:0};
-  navigator.geolocation.getCurrentPosition(pos => {
-    placeMe(pos);
+  const fine = {enableHighAccuracy:true, timeout:20000, maximumAge:0};
+  const coarse = {enableHighAccuracy:false, timeout:12000, maximumAge:0};
+  const got = pos => {
+    placeMe(pos, false);
     if(watchId) navigator.geolocation.clearWatch(watchId);
-    watchId = navigator.geolocation.watchPosition(placeMe, () => {}, {enableHighAccuracy:true, maximumAge:4000});
-  }, err => {
-    if(!note) return;
-    note.textContent = err && err.code === 1
-      ? "Location is blocked. In Safari, allow location for this site, then tap again."
-      : "No fix yet. Turn location on, then tap again.";
-  }, opts);
+    watchId = navigator.geolocation.watchPosition(p => placeMe(p, false), () => {}, {enableHighAccuracy:true, maximumAge:5000});
+  };
+  navigator.geolocation.getCurrentPosition(got, () => {
+    navigator.geolocation.getCurrentPosition(got, () => { if(note) showApprox(note); }, fine);
+  }, coarse);
 }
 $("#mapMe").onclick = showMyLocation;
 $("#locBtn").onclick = showMyLocation;
