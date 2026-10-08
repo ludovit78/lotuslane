@@ -103,8 +103,11 @@ input,select,textarea{width:100%;margin-top:4px;padding:12px;border-radius:12px;
       <input id="email" type="email" placeholder="you@email.com" autocomplete="email"/>
       <label for="cur">Currency you hold there</label>
       <select id="cur">
-        <option>EUR</option><option>GBP</option><option>USD</option><option>AUD</option><option>SGD</option>
+        <option value="VND">₫ VND · Vietnamese dong</option>
+        <option>EUR</option><option>GBP</option><option>USD</option><option>AUD</option><option>SGD</option><option>THB</option>
       </select>
+      <label for="bal">Balance</label>
+      <input id="bal" inputmode="decimal" placeholder="5000000"/>
       <div class="dock"><button type="button" class="go" id="addWise">Add Wise account</button></div>
     </div>
     <div id="wiseList"></div>
@@ -264,7 +267,8 @@ function renderWise() {
     card.className = "card";
     card.innerHTML = "<b></b><p class='meta'></p>";
     card.querySelector("b").textContent = a.name + " · " + a.currency;
-    card.querySelector("p").textContent = a.email;
+    const bal = a.balance ? " · " + a.balance + " " + a.currency : "";
+    card.querySelector("p").textContent = a.email + bal;
     const del = document.createElement("button");
     del.type = "button";
     del.className = "del";
@@ -432,10 +436,11 @@ $("addWise").onclick = () => {
     return;
   }
   const list = load(WISE_KEY);
-  list.unshift({ id: Date.now().toString(36), name, email, currency: $("cur").value });
+  list.unshift({ id: Date.now().toString(36), name, email, currency: $("cur").value, balance: $("bal").value.trim() });
   store(WISE_KEY, list);
   $("nick").value = "";
   $("email").value = "";
+  $("bal").value = "";
   renderWise();
   fillAccounts();
   say("Wise account saved on this phone");
