@@ -265,12 +265,14 @@ nav.bar button.on{color:var(--lotus)}
   </div>
   <div class="box" style="margin-top:12px">
     <h3>Wise card</h3>
-    <p class="meta">Last 4 digits only. The dong balance is what you can pay with inside LotusLane.</p>
+    <p class="meta">Enter the whole card. After you save it, only the last 4 digits stay on screen. The security code is not asked for and is not stored.</p>
     <div class="form">
       <div><label>Name on card</label><input id="cardName" placeholder="L RAZIOK" autocomplete="off"/></div>
-      <div><label>Last 4 digits</label><input id="cardLast4" inputmode="numeric" maxlength="4" placeholder="4242" autocomplete="off"/></div>
+      <div><label>Card number</label><input id="cardNumber" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 4242" autocomplete="off" spellcheck="false"/></div>
+      <div><label>Expires</label><input id="cardExp" inputmode="numeric" maxlength="5" placeholder="MM/YY" autocomplete="off"/></div>
       <div><label>Dong on the card</label><input id="cardVnd" inputmode="decimal" placeholder="5000000"/></div>
     </div>
+    <p class="meta" id="cardStored">Not stored yet</p>
     <button class="btn" type="button" id="saveWiseCard">Save Wise card</button>
   </div>
   <div class="box" style="margin-top:12px">
@@ -748,6 +750,26 @@ function last4(raw){
   const digits = String(raw||"").replace(/\D/g,"");
   return digits.slice(-4);
 }
+function luhn(digits){
+  let sum = 0;
+  let alt = false;
+  for(let i = digits.length - 1; i >= 0; i--){
+    let n = Number(digits[i]);
+    if(alt){ n *= 2; if(n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return digits.length >= 13 && digits.length <= 19 && sum % 10 === 0;
+}
+function tidyExp(raw){
+  const d = String(raw||"").replace(/\D/g,"").slice(0,4);
+  if(d.length < 4) return "";
+  const mm = d.slice(0,2);
+  const yy = d.slice(2);
+  const month = Number(mm);
+  if(month < 1 || month > 12) return "";
+  return mm + "/" + yy;
+}
 function renderWallet(){
   const cur = document.getElementById("wiseCur");
   if(cur && !cur.options.length){
@@ -761,7 +783,13 @@ function renderWallet(){
   document.getElementById("wiseCardName").textContent = card && card.holder ? card.holder : (wise.name || "Add the card");
   document.getElementById("wiseCardVnd").textContent = dong(card && card.vnd);
   document.getElementById("cardName").value = card && card.holder ? card.holder : "";
-  document.getElementById("cardLast4").value = card && card.last4 ? card.last4 : "";
+  const numberBox = document.getElementById("cardNumber");
+  if(document.activeElement !== numberBox) numberBox.value = "";
+  const expBox = document.getElementById("cardExp");
+  if(document.activeElement !== expBox) expBox.value = "";
+  document.getElementById("cardStored").textContent = card && card.last4
+    ? "Stored as •••• "+card.last4+(card.exp ? " · expires "+card.exp : "")
+    : "Not stored yet";
   document.getElementById("cardVnd").value = card && card.vnd!=null ? String(card.vnd) : "";
   const cardDong = toDong(card && card.vnd, "VND");
   const otherDong = wise.balances.reduce((s,a)=>s+toDong(a.amount, a.currency), 0);
@@ -842,19 +870,55 @@ document.getElementById("saveWiseAccount").onclick = () => {
 };
 document.getElementById("saveWiseCard").onclick = () => {
   const holder = document.getElementById("cardName").value.trim();
-  const end = last4(document.getElementById("cardLast4").value);
+  const typed = document.getElementById("cardNumber").value.replace(/\D/g,"");
+  const exp = tidyExp(document.getElementById("cardExp").value);
   const err = document.getElementById("wiseErr");
-  if(!holder || end.length!==4){
+  const wise = loadWise();
+  const previous = wise.card;
+  if(!holder){
     err.hidden = false;
-    err.textContent = "Name on the card, and only the last 4 digits.";
+    err.textContent = "Add the name on the card.";
+    return;
+  }
+  let number = previous && previous.number ? String(previous.number) : "";
+  if(typed){
+    if(!luhn(typed)){
+      err.hidden = false;
+      err.textContent = "That card number does not look valid. Enter the full number.";
+      return;
+    }
+    number = typed;
+  }
+  if(!number || number.length < 13){
+    err.hidden = false;
+    err.textContent = "Enter the whole card number.";
+    return;
+  }
+  const keptExp = exp || (previous && previous.exp) || "";
+  if(!keptExp){
+    err.hidden = false;
+    err.textContent = "Add the expiry as MM/YY.";
     return;
   }
   err.hidden = true;
-  const wise = loadWise();
-  wise.card = { holder, last4: end, vnd: document.getElementById("cardVnd").value.trim() || "0" };
+  wise.card = {
+    holder,
+    number,
+    last4: number.slice(-4),
+    exp: keptExp,
+    vnd: document.getElementById("cardVnd").value.trim() || "0"
+  };
   saveWise(wise);
   renderWallet();
 };
+document.getElementById("cardNumber").addEventListener("input", (e) => {
+  const digits = e.target.value.replace(/\D/g,"").slice(0,19);
+  e.target.value = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+});
+document.getElementById("cardExp").addEventListener("input", (e) => {
+  const d = e.target.value.replace(/\D/g,"").slice(0,4);
+  e.target.value = d.length > 2 ? d.slice(0,2)+"/"+d.slice(2) : d;
+});
 document.getElementById("addWise").onclick = () => {
   const amount = document.getElementById("wiseBal").value.trim();
   const currency = document.getElementById("wiseCur").value;
@@ -867,9 +931,6 @@ document.getElementById("addWise").onclick = () => {
   document.getElementById("wiseBal").value = "";
   renderWallet();
 };
-document.getElementById("cardLast4").addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/\D/g,"").slice(0,4);
-});
 document.getElementById("gbpIn").addEventListener("input", paintGbp);
 paintGbp();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});

@@ -108,11 +108,14 @@ input,select,textarea{width:100%;margin-top:4px;padding:12px;border-radius:12px;
     </div>
     <div class="card">
       <h2>Wise card</h2>
-      <p class="meta">Last 4 digits only. This is the dong you can spend here.</p>
+      <p class="meta">Enter the whole card. Once it is saved, only the last 4 digits show. The security code is not stored.</p>
       <label for="cardName">Name on card</label>
       <input id="cardName" placeholder="L RAZIOK" autocomplete="off"/>
-      <label for="cardLast4">Last 4 digits</label>
-      <input id="cardLast4" inputmode="numeric" maxlength="4" placeholder="4242" autocomplete="off"/>
+      <label for="cardNumber">Card number</label>
+      <input id="cardNumber" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 4242" autocomplete="off" spellcheck="false"/>
+      <label for="cardExp">Expires</label>
+      <input id="cardExp" inputmode="numeric" maxlength="5" placeholder="MM/YY" autocomplete="off"/>
+      <p class="meta" id="cardStored">Not stored yet</p>
       <label for="bal">Dong on the card</label>
       <input id="bal" inputmode="decimal" placeholder="5000000"/>
       <div class="dock"><button type="button" class="go" id="saveCard">Save Wise card</button></div>
@@ -156,6 +159,24 @@ function loadWise(){
     }
   } catch (e) {}
   return { name: "", email: "", card: null, balances: [] };
+}
+function tidyExp(raw){
+  const d = String(raw || "").replace(/\D/g, "").slice(0, 4);
+  if (d.length < 4) return "";
+  const month = Number(d.slice(0, 2));
+  if (month < 1 || month > 12) return "";
+  return d.slice(0, 2) + "/" + d.slice(2);
+}
+function luhn(digits){
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = Number(digits[i]);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return digits.length >= 13 && digits.length <= 19 && sum % 10 === 0;
 }
 function saveWise(w){ localStorage.setItem(WISE_V2, JSON.stringify(w)); }
 function load(key) {
@@ -260,8 +281,13 @@ function paintCard() {
     ? "•••• " + card.last4 + (card.holder ? " · " + card.holder : "")
     : "Add a Wise card in Wallet";
   $("payCardBal").textContent = card ? money(card.vnd) + " left on the card" : "Dong is spent from the card, not from bank details.";
+  $("cardStored").textContent = card && card.last4
+    ? "Stored as •••• " + card.last4 + (card.exp ? " · expires " + card.exp : "")
+    : "Not stored yet";
   if (document.activeElement !== $("nick")) $("nick").value = wise.name || "";
   if (document.activeElement !== $("email")) $("email").value = wise.email || "";
+  if (document.activeElement !== $("cardNumber")) $("cardNumber").value = "";
+  if (document.activeElement !== $("cardExp")) $("cardExp").value = "";
 }
 function renderWise() {
   const wise = loadWise();
@@ -465,20 +491,44 @@ $("addWise").onclick = () => {
 };
 $("saveCard").onclick = () => {
   const holder = $("cardName").value.trim();
-  const end = $("cardLast4").value.replace(/\D/g, "").slice(-4);
-  if (!holder || end.length !== 4) {
-    say("Name on the card, and only the last 4 digits.");
+  const typed = $("cardNumber").value.replace(/\D/g, "");
+  const exp = tidyExp($("cardExp").value);
+  const wise = loadWise();
+  const previous = wise.card;
+  if (!holder) {
+    say("Add the name on the card.");
     return;
   }
-  const wise = loadWise();
-  wise.card = { holder, last4: end, vnd: $("bal").value.trim() || "0" };
+  let number = previous && previous.number ? String(previous.number) : "";
+  if (typed) {
+    if (!luhn(typed)) {
+      say("That card number does not look valid. Enter the full number.");
+      return;
+    }
+    number = typed;
+  }
+  if (!number || number.length < 13) {
+    say("Enter the whole card number.");
+    return;
+  }
+  const keptExp = exp || (previous && previous.exp) || "";
+  if (!keptExp) {
+    say("Add the expiry as MM/YY.");
+    return;
+  }
+  wise.card = { holder, number, last4: number.slice(-4), exp: keptExp, vnd: $("bal").value.trim() || "0" };
   saveWise(wise);
   renderWise();
   paintCard();
-  say("Wise card saved. Dong is on the card.");
+  say("Saved. Only the last 4 digits stay on screen.");
 };
-$("cardLast4").addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+$("cardNumber").addEventListener("input", (e) => {
+  const digits = e.target.value.replace(/\D/g, "").slice(0, 19);
+  e.target.value = digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+});
+$("cardExp").addEventListener("input", (e) => {
+  const d = e.target.value.replace(/\D/g, "").slice(0, 4);
+  e.target.value = d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d;
 });
 $("pay").onclick = async () => {
   if (!bill) return;
