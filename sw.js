@@ -1,4 +1,4 @@
-const CACHE = "lotuslane-v51";
+const CACHE = "lotuslane-v52";
 const PRECACHE = ["./","index.html","lens.html","pay.html","jsQR.min.js","manifest.json","apple-touch-icon.png","icon-192.png","icon-512.png","hero.jpg","lotus.jpg"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

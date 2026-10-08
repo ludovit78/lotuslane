@@ -181,6 +181,7 @@ nav.bar button.on{color:var(--lotus)}
   <p class="meta">Green pins are countries. Pink pins are your stays. Blue is you.</p>
   <div id="leaflet" style="height:420px;border-radius:18px;border:1px solid var(--line);margin:8px 0"></div>
   <button class="btn" type="button" id="mapMe">Show my location</button>
+  <p class="meta" id="mapNote" style="margin-top:8px"></p>
   <input id="q" placeholder="Search Thailand, Vietnam…" style="margin:8px 0"/>
   <div id="cards" class="grid"></div>
   <div id="country" class="box" style="margin-top:12px;display:none"></div>
@@ -628,17 +629,6 @@ function renderSaved(){
 }
 function renderPlay(){ showPlaceLists($("#placeQ").value); renderSaved(); }
 $("#placeBtn").onclick = () => showPlaceLists($("#placeQ").value);
-$("#locBtn").onclick = () => {
-  const box = $("#mapBox");
-  box.style.display = "block";
-  box.textContent = "Finding you…";
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = pos.coords.latitude, lon = pos.coords.longitude;
-    box.innerHTML = `<b>You are here</b><p class="meta">${lat.toFixed(4)}, ${lon.toFixed(4)}</p>
-      <a class="btn" href="https://maps.apple.com/?ll=${lat},${lon}&q=My%20location" target="_blank">Apple Maps</a>
-      <a class="btn s" href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">Google Maps</a>`;
-  }, () => { box.textContent = "Location blocked. Allow location for Safari, then try again."; });
-};
 $("#savePlace").onclick = () => {
   const name = $("#savedName").value.trim();
   if(!name) return;
@@ -668,20 +658,66 @@ if(state.homeDate) $("#homeDate").value = state.homeDate;
 $("#addBtn").onclick=e=>{ e.preventDefault(); addLine(); };
 $$("#viewTabs .chip").forEach(b=>b.onclick=()=>{ view=b.dataset.view; $$("#viewTabs .chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); renderPlan(); });
 $("#q").addEventListener("input", renderCards);
-let meMarker, watchId;
-function followMe(){
+let meMarker, meCircle, watchId;
+function placeMe(pos){
   renderMap();
-  if(!navigator.geolocation) return;
-  if(watchId) navigator.geolocation.clearWatch(watchId);
-  watchId = navigator.geolocation.watchPosition(pos => {
-    const ll = [pos.coords.latitude, pos.coords.longitude];
-    if(!meMarker) meMarker = L.circleMarker(ll, {radius:10, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1}).addTo(map).bindPopup("You are here");
-    else meMarker.setLatLng(ll);
-    map.setView(ll, 14);
-  }, () => {}, {enableHighAccuracy:true, maximumAge:5000});
+  if(!map) return;
+  const lat = pos.coords.latitude, lon = pos.coords.longitude;
+  const ll = [lat, lon];
+  const acc = Math.max(pos.coords.accuracy || 40, 8);
+  if(!meMarker){
+    meCircle = L.circle(ll, {radius:acc, color:"#1d4ed8", weight:1, fillColor:"#60a5fa", fillOpacity:.18}).addTo(map);
+    meMarker = L.circleMarker(ll, {radius:9, color:"#1d4ed8", fillColor:"#60a5fa", fillOpacity:1, weight:3}).addTo(map);
+  } else {
+    meMarker.setLatLng(ll);
+    meCircle.setLatLng(ll);
+    meCircle.setRadius(acc);
+  }
+  const label = lat.toFixed(5)+", "+lon.toFixed(5);
+  meMarker.bindPopup("<b>You are here</b><br>"+label+"<br>± "+Math.round(acc)+" m");
+  const note = $("#mapNote");
+  if(note) note.textContent = "You are here · "+label;
+  setTimeout(() => {
+    map.invalidateSize();
+    map.setView(ll, 16);
+    meMarker.openPopup();
+  }, 280);
+  fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude="+lat+"&longitude="+lon+"&localityLanguage=en")
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      if(!j) return;
+      const where = [j.locality, j.city, j.principalSubdivision, j.countryName].filter(Boolean);
+      const name = [...new Set(where)].slice(0, 3).join(", ");
+      if(!name) return;
+      meMarker.bindPopup("<b>"+name+"</b><br>"+label+"<br>± "+Math.round(acc)+" m");
+      meMarker.openPopup();
+      if(note) note.textContent = name+" · "+label;
+    })
+    .catch(() => {});
 }
+function showMyLocation(){
+  go("map");
+  const note = $("#mapNote");
+  if(!navigator.geolocation){
+    if(note) note.textContent = "This phone cannot share location.";
+    return;
+  }
+  if(note) note.textContent = "Finding you…";
+  const opts = {enableHighAccuracy:true, timeout:20000, maximumAge:0};
+  navigator.geolocation.getCurrentPosition(pos => {
+    placeMe(pos);
+    if(watchId) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(placeMe, () => {}, {enableHighAccuracy:true, maximumAge:4000});
+  }, err => {
+    if(!note) return;
+    note.textContent = err && err.code === 1
+      ? "Location is blocked. In Safari, allow location for this site, then tap again."
+      : "No fix yet. Turn location on, then tap again.";
+  }, opts);
+}
+$("#mapMe").onclick = showMyLocation;
+$("#locBtn").onclick = showMyLocation;
 window.addEventListener("orientationchange", () => { if(map) setTimeout(()=>map.invalidateSize(), 300); });
-$("#locBtn").onclick = followMe;
 ["from","to","when"].forEach(id=>$("#"+id).addEventListener("input", scout));
 async function rates(){
   let fresh = false;
