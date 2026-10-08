@@ -90,9 +90,9 @@ input,select,textarea{width:100%;margin-top:4px;padding:12px;border-radius:12px;
         <p id="payCardBal" style="margin-top:6px"></p>
       </div>
       <div class="dock">
-        <button type="button" class="go" id="pay">Pay with Wise card</button>
+        <button type="button" class="go" id="pay">Send with Wise</button>
       </div>
-      <p class="note">Dong is taken off the Wise card balance in this app. Wise does not give Vietnamese bank details, so the card is how you pay.</p>
+      <p class="note">This copies the VietQR and opens Wise. The shop is paid only after you confirm the transfer there. LotusLane cannot move the dong itself.</p>
     </div>
   </section>
 
@@ -316,17 +316,6 @@ function renderWise() {
     row.append(title, meta, del);
     box.append(row);
   }
-  for (const a of wise.balances) {
-    const row = document.createElement("div");
-    row.className = "card";
-    const title = document.createElement("b");
-    title.textContent = a.currency + " · " + a.amount;
-    const meta = document.createElement("p");
-    meta.className = "meta";
-    meta.textContent = "Bank details in Wise. Not used for dong.";
-    row.append(title, meta);
-    box.append(row);
-  }
 }
 function renderPays() {
   const box = $("payList");
@@ -534,7 +523,7 @@ $("pay").onclick = async () => {
   if (!bill) return;
   const wise = loadWise();
   if (!wise.card || !wise.card.last4) {
-    setError("Add the Wise card first. Vietnamese dong is on the card, not in bank details.");
+    setError("Add the Wise card in the wallet first. Only the dong on that card is used.");
     showTab("wallet");
     return;
   }
@@ -544,13 +533,6 @@ $("pay").onclick = async () => {
     setError("Type the amount in dong.");
     return;
   }
-  const have = Number(String(wise.card.vnd || "").replace(/[^\d.]/g, "")) || 0;
-  if (amountN > have) {
-    setError("The Wise card has " + money(have) + ". That is not enough.");
-    return;
-  }
-  wise.card.vnd = String(Math.round(have - amountN));
-  saveWise(wise);
   const item = { ...bill, amount: String(amountN), note: $("memo").value.trim() || bill.note };
   const payment = {
     id: Date.now().toString(36),
@@ -559,15 +541,15 @@ $("pay").onclick = async () => {
     account: item.account,
     amount: item.amount,
     note: item.note,
-    fromName: "Wise card •••• " + wise.card.last4,
-    slip: slip(item, { name: wise.card.holder, email: wise.email || "", currency: "VND" }),
-    paid: true
+    fromName: wise.card && wise.card.last4 ? "Wise card •••• " + wise.card.last4 : "Wise",
+    slip: slip(item, { name: (wise.card && wise.card.holder) || wise.name || "Wise", email: wise.email || "", currency: "VND" }),
+    paid: false
   };
   store(PAY_KEY, [payment, ...load(PAY_KEY)]);
   renderPays();
-  paintCard();
   setError("");
-  say("Paid " + money(amountN) + ". " + money(wise.card.vnd) + " left on the card.");
+  say("Opening Wise. Confirm the dong there.");
+  await openWise(payment);
   showTab("paid");
 };
 document.querySelectorAll("[data-tab]").forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
