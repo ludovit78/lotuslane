@@ -176,6 +176,8 @@ fromEl.value = LANGS.some(l => l.id === saved.from) ? saved.from : "vi";
 toEl.value = LANGS.some(l => l.id === saved.to) ? saved.to : "en";
 if (saved.tool === "voice" || saved.tool === "camera" || saved.tool === "scan") tool = saved.tool;
 if (saved.net === "online" || saved.net === "offline") netMode = saved.net;
+const sharedMode = localStorage.getItem("lotuslane.mode");
+if (sharedMode === "online" || sharedMode === "offline") netMode = sharedMode;
 if (!navigator.onLine) netMode = "offline";
 if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
 
@@ -201,6 +203,7 @@ let spoken = "Rare beef pho";
 function lang(id){ return LANGS.find(l => l.id === id); }
 function saveDir(){
   localStorage.setItem("lotuslane.lens", JSON.stringify({from:fromEl.value, to:toEl.value, tool:tool, net:netMode}));
+  localStorage.setItem("lotuslane.mode", netMode);
   paintChrome();
 }
 saveDir();
