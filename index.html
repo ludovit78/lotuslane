@@ -245,6 +245,15 @@ nav.bar button.on{color:var(--lotus)}
   </div>
   <p class="meta" id="walletDongNote" style="margin-top:8px">Dong has no bank details on Wise. You spend it from the card.</p>
   <div class="box" style="margin-top:12px">
+    <h3>Pounds to dong</h3>
+    <p><b id="gbpRate">£1 = ₫…</b></p>
+    <p class="meta">Live rate. Type pounds and the dong updates.</p>
+    <div class="form">
+      <div><label>GBP</label><input id="gbpIn" inputmode="decimal" value="1"/></div>
+      <div><label>Vietnamese dong</label><input id="vndOut" readonly/></div>
+    </div>
+  </div>
+  <div class="box" style="margin-top:12px">
     <h3>Wise account</h3>
     <p class="meta">The account the card belongs to. Email only. No password.</p>
     <div class="form">
@@ -579,7 +588,7 @@ function showPlaceLists(q){
   }
   renderCalc();
 }
-let calcFrom = "VND", calcTo = "GBP", calcAmt = "1", calcMem = 0, fxUpdated = "";
+let calcFrom = "GBP", calcTo = "VND", calcAmt = "1", calcMem = 0, fxUpdated = "";
 function fmtCur(code, n){
   const c = CUR.find(x=>x[0]===code);
   const shown = (code==="VND"||code==="IDR"||code==="KRW") ? Math.round(n).toLocaleString() : Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -698,6 +707,7 @@ async function rates(){
   localStorage.setItem("lotuslane_fx", JSON.stringify(FX));
   fxUpdated = new Date().toLocaleString();
   renderPlan(); renderCalc();
+  paintGbp();
   if(document.getElementById("wallet") && document.getElementById("wallet").classList.contains("on")) renderWallet();
 }
 fill(); rates(); renderCards(); scout();
@@ -716,6 +726,18 @@ function loadWise(){
 }
 function saveWise(w){ localStorage.setItem(WISE_V2, JSON.stringify(w)); }
 function dong(n){ return "₫"+Math.round(Number(n)||0).toLocaleString("en-GB"); }
+function gbpToDong(pounds){
+  const n = Number(String(pounds==null?"":pounds).replace(/,/g,"")) || 0;
+  return n / (FX.GBP||0.78) * (FX.VND||25000);
+}
+function paintGbp(){
+  const rateEl = document.getElementById("gbpRate");
+  const inn = document.getElementById("gbpIn");
+  const out = document.getElementById("vndOut");
+  if(!rateEl || !inn || !out) return;
+  rateEl.textContent = "£1 = "+dong(gbpToDong(1));
+  out.value = dong(gbpToDong(inn.value));
+}
 function toDong(amount, cur){
   const n = Number(String(amount==null?"":amount).replace(/,/g,"")) || 0;
   if(!n) return 0;
@@ -744,6 +766,7 @@ function renderWallet(){
   const cardDong = toDong(card && card.vnd, "VND");
   const otherDong = wise.balances.reduce((s,a)=>s+toDong(a.amount, a.currency), 0);
   document.getElementById("walletDongNote").textContent = "Card "+dong(cardDong)+". Other Wise money is about "+dong(otherDong)+" if you converted it. Dong itself has no account number.";
+  paintGbp();
   const box = document.getElementById("wiseList");
   box.innerHTML = "";
   if(!wise.balances.length){
@@ -847,6 +870,8 @@ document.getElementById("addWise").onclick = () => {
 document.getElementById("cardLast4").addEventListener("input", (e) => {
   e.target.value = e.target.value.replace(/\D/g,"").slice(0,4);
 });
+document.getElementById("gbpIn").addEventListener("input", paintGbp);
+paintGbp();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
