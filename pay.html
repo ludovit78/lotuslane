@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#14241c"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Pay · LotusLane</title>
+<style>
+:root{--ink:#14241c;--muted:#5d6e66;--line:#e6d7c2;--paper:#f6efe4;--card:#fffdf9}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f6efe4;background:#14241c}
+button,input,select{font:inherit;font-size:16px}
+.app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto}
+header{padding:max(12px,env(safe-area-inset-top)) 14px 8px}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand a{color:#f6efe4;text-decoration:none;font-weight:750}
+.brand small{display:block;color:#b7c7be;font-weight:500}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.tabs button{min-height:40px;border:0;border-radius:999px;background:#1e3329;color:#b7c7be;font-weight:700}
+.tabs button.on{background:#f6efe4;color:#14241c}
+.panel{display:none;flex:1;min-height:0;flex-direction:column;overflow:auto;padding:0 14px 12px}
+.panel.on{display:flex}
+video,img.shot{width:100%;height:220px;object-fit:cover;background:#000;border-radius:18px}
+.frame{position:relative}
+.frame i{position:absolute;width:28px;height:28px;border:3px solid #f4c7a1;pointer-events:none}
+.frame i:nth-child(1){left:16px;top:16px;border-right:0;border-bottom:0}
+.frame i:nth-child(2){right:16px;top:16px;border-left:0;border-bottom:0}
+.frame i:nth-child(3){left:16px;bottom:16px;border-right:0;border-top:0}
+.frame i:nth-child(4){right:16px;bottom:16px;border-left:0;border-top:0}
+.dock{display:flex;gap:8px;margin-top:10px}
+.dock button,.btn{min-height:48px;border:0;border-radius:999px;font-weight:750;padding:0 14px}
+.go{flex:1;background:linear-gradient(135deg,#0c6b4f,#0e8f9a);color:#fff}
+.ghost{flex:1;background:#1e3329;color:#f6efe4}
+.card{background:#fffdf9;color:#14241c;border-radius:18px;padding:14px;margin-top:10px}
+.card h2{font-size:1.15rem}
+.meta{color:#5d6e66;font-size:.92rem;margin-top:4px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid #e6d7c2}
+.row b{text-align:right}
+label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#5d6e66;margin-top:10px}
+input,select,textarea{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:1px solid #e6d7c2;background:#fff;color:#14241c}
+.note{color:#b7c7be;font-size:.88rem;line-height:1.4;margin-top:8px}
+.err{background:#3a1d22;color:#ffd0d6;border-radius:14px;padding:10px 12px;margin-top:8px}
+.ok{background:#173328;color:#d7f5e8;border-radius:14px;padding:10px 12px;margin-top:8px}
+.item{display:flex;gap:8px;align-items:stretch;margin-top:8px}
+.item .card{margin:0;flex:1}
+.del{flex:none;min-width:76px;border:0;border-radius:14px;background:#e25d72;color:#fff;font-weight:700}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div><a href="index.html">LotusLane</a><small id="sub">VietQR</small></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" data-tab="scan" class="on">Scan</button>
+      <button type="button" data-tab="wallet">Wallet</button>
+      <button type="button" data-tab="paid">Paid</button>
+    </div>
+  </header>
+
+  <section class="panel on" data-panel="scan">
+    <div class="frame">
+      <video id="video" playsinline muted autoplay hidden></video>
+      <img id="shot" class="shot" alt="" hidden/>
+      <i></i><i></i><i></i><i></i>
+    </div>
+    <div class="dock">
+      <button type="button" class="go" id="open">Open camera</button>
+      <button type="button" class="ghost" id="photo">Photo</button>
+    </div>
+    <p class="note">Point at a VietQR on a menu, a shop sign, or a bill. The bank and account stay on this phone until you pay or delete them.</p>
+    <p class="err" id="error" hidden></p>
+    <div class="card" id="bill" hidden>
+      <h2 id="billBank">Vietnamese bank</h2>
+      <p class="meta" id="billWho"></p>
+      <div class="row"><span>Account</span><b id="billAccount"></b></div>
+      <div class="row"><span>Amount</span><b id="billAmount"></b></div>
+      <div class="row"><span>Note</span><b id="billNote"></b></div>
+      <label for="amount">Amount in dong</label>
+      <input id="amount" inputmode="decimal" placeholder="180000"/>
+      <label for="memo">Note for Wise</label>
+      <input id="memo" maxlength="25" placeholder="lunch"/>
+      <label for="fromAcct">Pay from</label>
+      <select id="fromAcct"></select>
+      <div class="dock">
+        <button type="button" class="go" id="pay">Pay with Wise</button>
+      </div>
+      <p class="note">Wise sends the dong. LotusLane opens Wise with this slip and does not see your Wise password.</p>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="wallet">
+    <div class="card">
+      <h2>Wise accounts</h2>
+      <p class="meta">Add the Wise account you pay from. A nickname and the email on that Wise profile is enough.</p>
+      <label for="nick">Name</label>
+      <input id="nick" placeholder="Travel euro"/>
+      <label for="email">Wise email</label>
+      <input id="email" type="email" placeholder="you@email.com" autocomplete="email"/>
+      <label for="cur">Currency you hold there</label>
+      <select id="cur">
+        <option>EUR</option><option>GBP</option><option>USD</option><option>AUD</option><option>SGD</option>
+      </select>
+      <div class="dock"><button type="button" class="go" id="addWise">Add Wise account</button></div>
+    </div>
+    <div id="wiseList"></div>
+    <p class="note">Accounts stay on this phone. Delete one here any time. Nothing is sent to LotusLane.</p>
+  </section>
+
+  <section class="panel" data-panel="paid">
+    <p class="note">Payments you started. Mark one paid after Wise confirms it, or delete it.</p>
+    <div id="payList"></div>
+  </section>
+  <p class="sr" id="live" aria-live="polite"></p>
+  <input id="file" class="sr" type="file" accept="image/*" capture="environment"/>
+  <canvas id="canvas" class="sr"></canvas>
+</div>
+<script src="jsQR.min.js"></script>
+<script>
+const BANKS = {
+  "970436":"Vietcombank","970415":"VietinBank","970418":"BIDV","970405":"Agribank","970422":"MB Bank",
+  "970407":"Techcombank","970432":"VPBank","970416":"ACB","970403":"Sacombank","970437":"HDBank",
+  "970423":"TPBank","970441":"VIB","970448":"OCB","970426":"MSB","970443":"SHB","970431":"Eximbank",
+  "970440":"SeABank","970429":"SCB","970424":"Shinhan Bank","970449":"LPBank","970452":"Kienlongbank",
+  "970428":"Nam A Bank","970425":"ABBANK","970409":"Bac A Bank","970412":"PVcomBank","970438":"BaoViet Bank",
+  "970446":"Co-opBank","970406":"DongA Bank","970454":"BVBank","970433":"VietBank","970430":"PGBank",
+  "970400":"Saigonbank","970421":"VRB","970458":"UOB","970457":"Woori","970442":"Hong Leong",
+  "970448":"OCB"
+};
+const WISE_KEY = "lotuslane.wise.v1";
+const PAY_KEY = "lotuslane.pays.v1";
+const $ = id => document.getElementById(id);
+let stream = null;
+let loopOn = false;
+let detector = null;
+let bill = null;
+
+function load(key) {
+  try { const v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+function store(key, list) { localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); }
+function setError(t) {
+  $("error").hidden = !t;
+  $("error").textContent = t || "";
+}
+function say(t) { $("live").textContent = t || ""; }
+function money(n) {
+  const v = String(n || "").replace(/[^\d.]/g, "");
+  if (!v) return "Enter in the app";
+  const num = Number(v);
+  if (!Number.isFinite(num)) return v + " VND";
+  return new Intl.NumberFormat("en-GB").format(num) + " VND";
+}
+function tlv(str) {
+  const out = [];
+  let i = 0;
+  while (i + 4 <= str.length) {
+    const id = str.slice(i, i + 2);
+    const len = Number(str.slice(i + 2, i + 4));
+    if (!Number.isFinite(len) || len < 0 || i + 4 + len > str.length) break;
+    out.push({ id, value: str.slice(i + 4, i + 4 + len) });
+    i += 4 + len;
+  }
+  return out;
+}
+function mapOf(str) {
+  const o = {};
+  for (const row of tlv(str)) o[row.id] = row.value;
+  return o;
+}
+function crc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let b = 0; b < 8; b++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+function parseVietQR(raw) {
+  const text = String(raw || "").trim();
+  if (!text.startsWith("000201") || !text.includes("A000000727")) return null;
+  const root = mapOf(text);
+  if (root["63"] && crc16(text.slice(0, -4)) !== root["63"].toUpperCase()) return null;
+  const merchant = mapOf(root["38"] || "");
+  if (merchant["00"] !== "A000000727") return null;
+  const who = mapOf(merchant["01"] || "");
+  const extra = mapOf(root["62"] || "");
+  const bin = who["00"] || "";
+  const account = who["01"] || "";
+  if (!bin || !account) return null;
+  return {
+    raw: text,
+    bin,
+    bank: BANKS[bin] || ("Bank " + bin),
+    account,
+    service: merchant["02"] === "QRIBFTTC" ? "Card" : "Account",
+    amount: root["54"] || "",
+    currency: root["53"] === "704" || !root["53"] ? "VND" : root["53"],
+    name: root["59"] || "",
+    city: root["60"] || "",
+    note: extra["08"] || extra["01"] || ""
+  };
+}
+function slip(item, account) {
+  return [
+    "LotusLane VietQR",
+    "From Wise: " + account.name + " · " + account.email + " · " + account.currency,
+    "To: " + item.bank + " (" + item.bin + ")",
+    "Account: " + item.account,
+    item.name ? "Name: " + item.name : "",
+    "Amount: " + (item.amount || "enter amount") + " VND",
+    item.note ? "Note: " + item.note : ""
+  ].filter(Boolean).join("\n");
+}
+function showBill(item) {
+  bill = item;
+  $("bill").hidden = false;
+  $("billBank").textContent = item.bank;
+  $("billWho").textContent = [item.service, item.name, item.city].filter(Boolean).join(" · ");
+  $("billAccount").textContent = item.account;
+  $("billAmount").textContent = item.amount ? money(item.amount) : "Not on the QR. Type it.";
+  $("billNote").textContent = item.note || "None";
+  $("amount").value = item.amount || "";
+  $("memo").value = item.note || "";
+  fillAccounts();
+  say(item.bank + " " + item.account);
+  setError("");
+}
+function fillAccounts() {
+  const list = load(WISE_KEY);
+  const sel = $("fromAcct");
+  const prev = sel.value;
+  sel.replaceChildren();
+  if (!list.length) {
+    const o = document.createElement("option");
+    o.value = "";
+    o.textContent = "Add a Wise account first";
+    sel.append(o);
+    return;
+  }
+  for (const a of list) {
+    const o = document.createElement("option");
+    o.value = a.id;
+    o.textContent = a.name + " · " + a.currency;
+    sel.append(o);
+  }
+  if (list.some(a => a.id === prev)) sel.value = prev;
+}
+function renderWise() {
+  const box = $("wiseList");
+  box.replaceChildren();
+  for (const a of load(WISE_KEY)) {
+    const row = document.createElement("div");
+    row.className = "item";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = "<b></b><p class='meta'></p>";
+    card.querySelector("b").textContent = a.name + " · " + a.currency;
+    card.querySelector("p").textContent = a.email;
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "del";
+    del.textContent = "Delete";
+    del.onclick = () => {
+      store(WISE_KEY, load(WISE_KEY).filter(x => x.id !== a.id));
+      renderWise();
+      fillAccounts();
+    };
+    row.append(card, del);
+    box.append(row);
+  }
+}
+function renderPays() {
+  const box = $("payList");
+  box.replaceChildren();
+  const list = load(PAY_KEY);
+  if (!list.length) {
+    const p = document.createElement("p");
+    p.className = "note";
+    p.textContent = "No payments yet. Scan a VietQR first.";
+    box.append(p);
+    return;
+  }
+  for (const p of list) {
+    const row = document.createElement("div");
+    row.className = "item";
+    const card = document.createElement("div");
+    card.className = "card";
+    const title = document.createElement("b");
+    title.textContent = p.bank + " · " + money(p.amount);
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent = (p.paid ? "Marked paid" : "Opened in Wise") + " · from " + p.fromName + " · " + p.account;
+    const actions = document.createElement("div");
+    actions.className = "dock";
+    const again = document.createElement("button");
+    again.type = "button";
+    again.className = "ghost";
+    again.textContent = "Open Wise";
+    again.onclick = () => openWise(p);
+    const mark = document.createElement("button");
+    mark.type = "button";
+    mark.className = "go";
+    mark.textContent = p.paid ? "Paid" : "Mark paid";
+    mark.disabled = !!p.paid;
+    mark.onclick = () => {
+      store(PAY_KEY, load(PAY_KEY).map(x => x.id === p.id ? { ...x, paid: true } : x));
+      renderPays();
+    };
+    actions.append(again, mark);
+    card.append(title, meta, actions);
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "del";
+    del.textContent = "Delete";
+    del.onclick = () => {
+      store(PAY_KEY, load(PAY_KEY).filter(x => x.id !== p.id));
+      renderPays();
+    };
+    row.append(card, del);
+    box.append(row);
+  }
+}
+function showTab(id) {
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === id));
+  document.querySelectorAll("[data-panel]").forEach(p => p.classList.toggle("on", p.dataset.panel === id));
+  $("sub").textContent = id === "wallet" ? "Wise wallet" : id === "paid" ? "Payments" : "VietQR";
+  if (id !== "scan" && stream) stopCam();
+}
+async function openWise(item) {
+  const text = item.slip || "";
+  try { await navigator.clipboard.writeText(text); } catch (e) {}
+  window.open("https://wise.com/send", "_blank", "noopener");
+}
+function stopCam() {
+  loopOn = false;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  $("video").hidden = true;
+  $("open").textContent = "Open camera";
+}
+async function readFrame(canvas) {
+  if ("BarcodeDetector" in window) {
+    try {
+      if (!detector) detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const codes = await detector.detect(canvas);
+      if (codes[0] && codes[0].rawValue) return codes[0].rawValue;
+    } catch (e) {}
+  }
+  if (typeof jsQR === "function") {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, canvas.width, canvas.height);
+    if (code && code.data) return code.data;
+  }
+  return "";
+}
+async function loop() {
+  const video = $("video");
+  const canvas = $("canvas");
+  while (loopOn && video.videoWidth) {
+    const scale = Math.min(1, 900 / video.videoWidth);
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    try {
+      const raw = await readFrame(canvas);
+      const parsed = raw ? parseVietQR(raw) : null;
+      if (parsed) {
+        showBill(parsed);
+        stopCam();
+        break;
+      }
+    } catch (e) {}
+    await new Promise(r => setTimeout(r, 280));
+  }
+}
+$("open").onclick = async () => {
+  if (stream) { stopCam(); return; }
+  setError("");
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+    const video = $("video");
+    video.hidden = false;
+    $("shot").hidden = true;
+    video.srcObject = stream;
+    await video.play();
+    loopOn = true;
+    $("open").textContent = "Stop";
+    void loop();
+  } catch (e) {
+    setError("Camera is blocked. Use Photo, or allow the camera for this site.");
+  }
+};
+$("photo").onclick = () => $("file").click();
+$("file").onchange = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  setError("");
+  try {
+    const bitmap = await createImageBitmap(file);
+    const canvas = $("canvas");
+    const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    $("shot").src = canvas.toDataURL("image/jpeg", 0.8);
+    $("shot").hidden = false;
+    $("video").hidden = true;
+    const raw = await readFrame(canvas);
+    const parsed = raw ? parseVietQR(raw) : null;
+    if (!parsed) setError("No VietQR in that photo. Hold it flat and fill the frame.");
+    else showBill(parsed);
+  } catch (e) {
+    setError("Couldn't read that photo.");
+  }
+};
+$("addWise").onclick = () => {
+  const name = $("nick").value.trim();
+  const email = $("email").value.trim();
+  if (!name || !email.includes("@")) {
+    say("Add a name and the Wise email.");
+    return;
+  }
+  const list = load(WISE_KEY);
+  list.unshift({ id: Date.now().toString(36), name, email, currency: $("cur").value });
+  store(WISE_KEY, list);
+  $("nick").value = "";
+  $("email").value = "";
+  renderWise();
+  fillAccounts();
+  say("Wise account saved on this phone");
+};
+$("pay").onclick = async () => {
+  if (!bill) return;
+  const accounts = load(WISE_KEY);
+  const account = accounts.find(a => a.id === $("fromAcct").value);
+  if (!account) {
+    setError("Add a Wise account in Wallet first.");
+    showTab("wallet");
+    return;
+  }
+  const amount = $("amount").value.trim();
+  if (!amount || Number(amount.replace(/[^\d.]/g, "")) <= 0) {
+    setError("Type the amount in dong.");
+    return;
+  }
+  const item = {
+    ...bill,
+    amount,
+    note: $("memo").value.trim() || bill.note
+  };
+  const text = slip(item, account);
+  const payment = {
+    id: Date.now().toString(36),
+    at: Date.now(),
+    bank: item.bank,
+    account: item.account,
+    amount,
+    note: item.note,
+    fromName: account.name,
+    slip: text,
+    paid: false
+  };
+  store(PAY_KEY, [payment, ...load(PAY_KEY)]);
+  renderPays();
+  setError("");
+  say("Opening Wise");
+  await openWise(payment);
+  showTab("paid");
+};
+document.querySelectorAll("[data-tab]").forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
+fillAccounts();
+renderWise();
+renderPays();
+</script>
+</body>
+</html>
