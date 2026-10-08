@@ -66,6 +66,12 @@ button:disabled{opacity:.4}
 .modes button.on{background:linear-gradient(135deg,#0c6b4f,#0e8f9a)}
 #scanDraft{margin:8px 14px;width:calc(100% - 28px);min-height:140px;border:0;border-radius:16px;padding:12px;color:#14241c;background:#fffdf9}
 #scanOut{margin:0 14px 8px}
+.saved{margin:0 14px 8px;overflow:auto;min-height:0}
+.saved-title{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b7c7be;margin:0 0 6px}
+.saved-row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+.saved-row .vcard{margin:0;flex:1}
+.saved-row button.card{border:0;width:100%;text-align:left}
+[data-panel="voice"].on{overflow:auto}
 </style>
 </head>
 <body>
@@ -83,7 +89,7 @@ button:disabled{opacity:.4}
       <button type="button" class="swap" id="swap" aria-label="Swap languages">⇄</button>
       <select id="to" aria-label="Language you read"></select>
     </div>
-    <div class="hint"><span id="hint">Tap Start, speak, then Stop</span><button type="button" class="ghost" id="share" style="flex:none;min-height:36px;padding:0 14px">Share</button></div>
+    <div class="hint"><span id="hint">Tap Start, speak, then Stop</span><button type="button" class="ghost" id="saveLine" style="flex:none;min-height:36px;padding:0 14px">Save</button><button type="button" class="ghost" id="share" style="flex:none;min-height:36px;padding:0 14px">Share</button></div>
   </header>
   <section class="panel on" data-panel="voice">
     <div class="vcard" id="vcard">
@@ -94,6 +100,10 @@ button:disabled{opacity:.4}
       <button type="button" class="go" id="vStart">Start</button>
       <button type="button" class="ghost" id="vStop" disabled>Stop</button>
       <button type="button" class="ghost" id="speak" style="flex:none;padding:0 14px">Speak</button>
+    </div>
+    <div class="saved" id="savedWrap" hidden>
+      <p class="saved-title">Saved on this phone</p>
+      <div id="savedList"></div>
     </div>
   </section>
   <section class="panel" data-panel="camera">
@@ -837,6 +847,89 @@ function showTool(id) {
 $("netOn").onclick = () => { netMode = "online"; saveDir(); };
 $("netOff").onclick = () => { netMode = "offline"; saveDir(); };
 $("share").onclick = () => { void shareNow(); };
+const LIST_KEY = "lotuslane.saved.v1";
+function loadSaved() {
+  try {
+    const list = JSON.parse(localStorage.getItem(LIST_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
+function storeSaved(list) {
+  localStorage.setItem(LIST_KEY, JSON.stringify(list.slice(0, 40)));
+}
+function lineNow() {
+  let source = "";
+  let out = "";
+  if (tool === "voice") {
+    source = ($("vHeard").textContent || "").trim();
+    if (!source || source === "Tap Start and speak" || source === "Listening…") source = "";
+    out = ($("vOut").textContent || "").trim();
+  } else if (tool === "scan") {
+    source = ($("scanDraft").value || "").trim();
+    out = ($("scanOut").textContent || "").trim();
+  } else if (!$("sample").hidden) {
+    source = "Phở bò tái";
+    out = "Rare beef pho";
+  } else {
+    out = (spoken || "").trim();
+  }
+  return { source, out };
+}
+function renderSaved() {
+  const list = loadSaved();
+  const wrap = $("savedWrap");
+  const box = $("savedList");
+  box.replaceChildren();
+  wrap.hidden = list.length === 0;
+  for (const item of list) {
+    const row = document.createElement("div");
+    row.className = "saved-row";
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "vcard";
+    const src = document.createElement("div");
+    src.className = "src";
+    src.textContent = item.source || lang(item.from).name;
+    const dst = document.createElement("div");
+    dst.className = "out";
+    dst.textContent = item.out || "";
+    open.append(src, dst);
+    open.onclick = () => {
+      if (LANGS.some(l => l.id === item.from)) fromEl.value = item.from;
+      if (LANGS.some(l => l.id === item.to)) toEl.value = item.to;
+      if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
+      showVoice(item.source || "", item.out || "");
+      spoken = item.out || "";
+      showTool("voice");
+    };
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "del";
+    del.textContent = "Delete";
+    del.onclick = () => {
+      storeSaved(loadSaved().filter(x => x.id !== item.id));
+      renderSaved();
+      setStatus("Deleted");
+    };
+    row.append(open, del);
+    box.append(row);
+  }
+}
+function saveLine() {
+  const { source, out } = lineNow();
+  if (!source && !out) {
+    setError("Nothing to save yet.");
+    return;
+  }
+  const list = loadSaved().filter(item => !(item.source === source && item.out === out && item.from === fromEl.value && item.to === toEl.value));
+  list.unshift({ id: Date.now().toString(36), from: fromEl.value, to: toEl.value, source, out, at: Date.now() });
+  storeSaved(list);
+  renderSaved();
+  setError("");
+  setStatus("Saved on this phone");
+  if (tool !== "voice") showTool("voice");
+}
+$("saveLine").onclick = saveLine;
 document.querySelectorAll("[data-tool]").forEach(btn => {
   btn.onclick = () => showTool(btn.dataset.tool);
 });
@@ -882,6 +975,7 @@ $("scanGo").onclick = async () => {
   }
 };
 paintChrome();
+renderSaved();
 </script>
 </body>
 </html>
