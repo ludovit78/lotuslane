@@ -264,7 +264,17 @@ html.dark .bad{background:#3a1d22;border-color:#7a3140;color:#ffd0d6}
       <b id="wiseCardVnd">₫0</b>
     </div>
   </div>
-  <p class="meta" id="walletDongNote" style="margin-top:8px">Only dong. This page cannot charge the Wise card.</p>
+  <p class="meta" id="walletDongNote" style="margin-top:8px">Only dong. The whole card stays on this phone.</p>
+  <button class="btn s" type="button" id="cardShow" style="margin-top:8px">Show whole card</button>
+  <div class="box" id="cardUse" hidden style="margin-top:12px">
+    <h3>Use the card</h3>
+    <p class="meta">Name, number, and expiry saved on this phone. Copy them into a card form. The security code is not stored, and this page cannot charge the card.</p>
+    <p style="margin-top:8px"><span class="meta">Name</span><br><b id="useName"></b></p>
+    <p style="margin-top:8px"><span class="meta">Number</span><br><b id="useNumber" style="letter-spacing:.06em"></b></p>
+    <p style="margin-top:8px"><span class="meta">Expires</span><br><b id="useExp"></b></p>
+    <p style="margin-top:8px"><span class="meta">Dong you typed</span><br><b id="useVnd"></b></p>
+    <button class="btn" type="button" id="copyCard" style="margin-top:10px">Copy card details</button>
+  </div>
   <div class="box" style="margin-top:12px">
     <h3>Pounds to dong</h3>
     <p><b id="gbpRate">£1 = ₫…</b></p>
@@ -286,7 +296,7 @@ html.dark .bad{background:#3a1d22;border-color:#7a3140;color:#ffd0d6}
   </div>
   <div class="box" style="margin-top:12px">
     <h3>Wise card</h3>
-    <p class="meta">Enter the whole card. After you save it, only the last 4 digits stay on screen. The dong amount is what you type. LotusLane cannot see the balance inside Wise.</p>
+    <p class="meta">Save the whole card once. Show it here when you want to pay, without opening Wise. The security code is not saved.</p>
     <div class="form">
       <div><label>Name on card</label><input id="cardName" placeholder="L RAZIOK" autocomplete="off"/></div>
       <div><label>Card number</label><input id="cardNumber" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 4242" autocomplete="off" spellcheck="false"/></div>
@@ -828,6 +838,53 @@ function luhn(digits){
   }
   return digits.length >= 13 && digits.length <= 19 && sum % 10 === 0;
 }
+function spacedCard(num){
+  return String(num||"").replace(/\D/g,"").replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+let cardOpen = false;
+function paintCardFace(){
+  const card = loadWise().card;
+  const has = !!(card && card.number && String(card.number).replace(/\D/g,"").length >= 13);
+  const show = document.getElementById("cardShow");
+  const box = document.getElementById("cardUse");
+  const numEl = document.getElementById("wiseCardNum");
+  if(show) show.textContent = has ? (cardOpen ? "Hide card" : "Show whole card") : "Add the full number below";
+  if(numEl){
+    numEl.textContent = has && cardOpen ? spacedCard(card.number) : (card && card.last4 ? "•••• "+card.last4 : "•••• ----");
+    numEl.style.letterSpacing = has && cardOpen ? ".08em" : ".18em";
+    numEl.style.fontSize = has && cardOpen ? "1.05rem" : "1.35rem";
+  }
+  if(!box) return;
+  box.hidden = !(has && cardOpen);
+  if(!(has && cardOpen)) return;
+  document.getElementById("useName").textContent = card.holder || "";
+  document.getElementById("useNumber").textContent = spacedCard(card.number);
+  document.getElementById("useExp").textContent = card.exp || "—";
+  document.getElementById("useVnd").textContent = dong(card.vnd);
+}
+document.getElementById("cardShow").onclick = () => {
+  const card = loadWise().card;
+  const has = card && card.number && String(card.number).replace(/\D/g,"").length >= 13;
+  if(!has){
+    const field = document.getElementById("cardNumber");
+    if(field) field.focus();
+    return;
+  }
+  cardOpen = !cardOpen;
+  paintCardFace();
+};
+document.getElementById("copyCard").onclick = async () => {
+  const card = loadWise().card;
+  if(!card || !card.number) return;
+  const text = [card.holder, spacedCard(card.number), card.exp ? "Expires "+card.exp : ""].filter(Boolean).join("\n");
+  const note = document.getElementById("cardStored");
+  try {
+    await navigator.clipboard.writeText(text);
+    if(note) note.textContent = "Card details copied";
+  } catch(e) {
+    if(note) note.textContent = "Could not copy. The number is on screen.";
+  }
+};
 function tidyExp(raw){
   const d = String(raw||"").replace(/\D/g,"").slice(0,4);
   if(d.length < 4) return "";
@@ -842,7 +899,6 @@ function renderWallet(){
   document.getElementById("wiseName").value = wise.name;
   document.getElementById("wiseEmail").value = wise.email;
   const card = wise.card;
-  document.getElementById("wiseCardNum").textContent = card && card.last4 ? "•••• "+card.last4 : "•••• ----";
   document.getElementById("wiseCardName").textContent = card && card.holder ? card.holder : (wise.name || "Add the card");
   document.getElementById("wiseCardVnd").textContent = dong(card && card.vnd);
   document.getElementById("cardName").value = card && card.holder ? card.holder : "";
@@ -854,7 +910,10 @@ function renderWallet(){
     ? "Stored as •••• "+card.last4+(card.exp ? " · expires "+card.exp : "")
     : "Not stored yet";
   document.getElementById("cardVnd").value = card && card.vnd!=null ? String(card.vnd) : "";
-  document.getElementById("walletDongNote").textContent = "Only dong on this card: "+dong(card && card.vnd)+". LotusLane cannot charge Wise.";
+  document.getElementById("walletDongNote").textContent = card && card.number
+    ? "Whole card is on this phone. Dong typed: "+dong(card.vnd)+"."
+    : "Add the full card number below. Only dong.";
+  paintCardFace();
   paintGbp();
   const pays = document.getElementById("walletPays");
   pays.innerHTML = "";
