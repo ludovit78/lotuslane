@@ -62,10 +62,10 @@ button:disabled{opacity:.4}
 .panel{display:none;flex:1;min-height:0;flex-direction:column}
 .panel.on{display:flex}
 .modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 14px calc(10px + env(safe-area-inset-bottom));background:#14241c;flex:none}
-.modes button{min-height:58px;border:0;border-radius:16px;background:#1e3329;color:#f6efe4;font-weight:750;font-size:.95rem}
+.modes button{min-height:48px;border:0;border-radius:16px;background:#1e3329;color:#f6efe4;font-weight:750;font-size:.82rem}
 .modes button.on{background:linear-gradient(135deg,#0c6b4f,#0e8f9a)}
-#scanDraft{margin:8px 14px;width:calc(100% - 28px);min-height:140px;border:0;border-radius:16px;padding:12px;color:#14241c;background:#fffdf9}
-#scanOut{margin:0 14px 8px}
+#scanDraft,#textDraft{margin:8px 14px;width:calc(100% - 28px);min-height:140px;border:0;border-radius:16px;padding:12px;color:#14241c;background:#fffdf9}
+#scanOut,#textOut{margin:0 14px 8px}
 .saved{margin:0 14px 8px;overflow:auto;min-height:0}
 .saved-title{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b7c7be;margin:0 0 6px}
 .saved-row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
@@ -117,11 +117,20 @@ button:disabled{opacity:.4}
     <button type="button" class="ghost" id="flip" hidden>Flip</button>
   </div>
   </section>
-  <section class="panel" data-panel="scan">
-    <p class="status">Photograph a menu or a page. Check the words, then translate.</p>
-    <textarea id="scanDraft" placeholder="Words from the page show here"></textarea>
+  <section class="panel" data-panel="text">
+    <p class="status">Type or paste the words, then translate.</p>
+    <textarea id="textDraft" placeholder="Paste a sentence or a paragraph"></textarea>
     <div class="dock">
-      <button type="button" class="ghost" id="scanShot">Take photo</button>
+      <button type="button" class="go" id="textGo">Translate</button>
+    </div>
+    <div class="vcard" id="textOut" hidden></div>
+  </section>
+  <section class="panel" data-panel="scan">
+    <p class="status" id="addNote">Add a photo or a document. Check the words, then translate.</p>
+    <textarea id="scanDraft" placeholder="Words from the photo or document show here"></textarea>
+    <div class="dock">
+      <button type="button" class="ghost" id="addPhoto">Photo</button>
+      <button type="button" class="ghost" id="addDoc">Document</button>
       <button type="button" class="go" id="scanGo">Translate</button>
     </div>
     <div class="vcard" id="scanOut" hidden></div>
@@ -129,14 +138,18 @@ button:disabled{opacity:.4}
   <p class="status" id="status">Tap Start, speak, then Stop</p>
   <p class="err" id="error" hidden></p>
   <nav class="modes" aria-label="How to translate">
-    <button type="button" data-tool="voice" class="on">Voice</button>
+    <button type="button" data-tool="text">Text</button>
+    <button type="button" data-tool="scan">Photo</button>
+    <button type="button" data-tool="doc">Document</button>
+    <button type="button" data-tool="voice">Voice</button>
     <button type="button" data-tool="camera">Camera</button>
-    <button type="button" data-tool="scan">Scan</button>
   </nav>
   <p class="sr" id="live" aria-live="polite"></p>
   <input id="file" class="sr" type="file" accept="image/*"/>
-  <input id="scanFile" class="sr" type="file" accept="image/*" capture="environment"/>
+  <input id="photoFile" class="sr" type="file" accept="image/*"/>
+  <input id="docFile" class="sr" type="file" accept="application/pdf,image/*"/>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const LANGS = [
@@ -169,7 +182,7 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem("lotuslane.lens") || "{}"); } catch (e) {}
 fromEl.value = LANGS.some(l => l.id === saved.from) ? saved.from : "vi";
 toEl.value = LANGS.some(l => l.id === saved.to) ? saved.to : "en";
-if (saved.tool === "voice" || saved.tool === "camera" || saved.tool === "scan") tool = saved.tool;
+if (saved.tool === "voice" || saved.tool === "camera" || saved.tool === "scan" || saved.tool === "text" || saved.tool === "doc") tool = saved.tool;
 if (fromEl.value === toEl.value) toEl.value = fromEl.value === "en" ? "vi" : "en";
 
 const cache = new Map();
@@ -487,9 +500,12 @@ async function shareNow(){
     source = ($("vHeard").textContent || "").trim();
     if (!source || source === "Tap Start and speak" || source === "Listening…") source = "";
     out = ($("vOut").textContent || "").trim();
-  } else if (tool === "scan") {
+  } else if (tool === "scan" || tool === "doc") {
     source = ($("scanDraft").value || "").trim();
     out = ($("scanOut").textContent || "").trim();
+  } else if (tool === "text") {
+    source = ($("textDraft").value || "").trim();
+    out = ($("textOut").textContent || "").trim();
   } else {
     const sampleHidden = $("sample").hidden;
     if (!sampleHidden) {
@@ -808,15 +824,21 @@ $("vStop").onclick = () => {
   try { if (voiceRec) voiceRec.stop(); } catch (e) {}
 };
 function paintChrome() {
-  $("brandSub").textContent = tool === "voice" ? "Voice" : tool === "camera" ? "Camera" : "Scan";
+  const names = {voice:"Voice", camera:"Camera", text:"Text", scan:"Photo", doc:"Document"};
+  $("brandSub").textContent = names[tool] || "Translate";
   const hints = {
     voice: "Tap Start, speak, then Stop",
     camera: "Point at words. A saved line is used if there is no signal.",
-    scan: "Photograph a page, then Translate"
+    text: "Type or paste, then Translate",
+    scan: "Add a photo, check the words, then Translate",
+    doc: "Add a PDF or a photo of a page, then Translate"
   };
   $("hint").textContent = hints[tool] || "";
-  document.querySelectorAll("[data-panel]").forEach(el => el.classList.toggle("on", el.dataset.panel === tool));
+  const panel = tool === "doc" ? "scan" : tool;
+  document.querySelectorAll("[data-panel]").forEach(el => el.classList.toggle("on", el.dataset.panel === panel));
   document.querySelectorAll("[data-tool]").forEach(el => el.classList.toggle("on", el.dataset.tool === tool));
+  const note = $("addNote");
+  if (note) note.textContent = tool === "doc" ? "Add a document. Check the words, then translate." : "Add a photo. Check the words, then translate.";
 }
 function showTool(id) {
   if (tool === "voice" && id !== "voice" && voiceRec) {
@@ -857,9 +879,12 @@ function lineNow() {
     source = ($("vHeard").textContent || "").trim();
     if (!source || source === "Tap Start and speak" || source === "Listening…") source = "";
     out = ($("vOut").textContent || "").trim();
-  } else if (tool === "scan") {
+  } else if (tool === "scan" || tool === "doc") {
     source = ($("scanDraft").value || "").trim();
     out = ($("scanOut").textContent || "").trim();
+  } else if (tool === "text") {
+    source = ($("textDraft").value || "").trim();
+    out = ($("textOut").textContent || "").trim();
   } else if (!$("sample").hidden) {
     source = "Phở bò tái";
     out = "Rare beef pho";
@@ -926,45 +951,82 @@ $("saveLine").onclick = saveLine;
 document.querySelectorAll("[data-tool]").forEach(btn => {
   btn.onclick = () => showTool(btn.dataset.tool);
 });
-$("scanShot").onclick = () => $("scanFile").click();
-$("scanFile").onchange = async (event) => {
+$("addPhoto").onclick = () => $("photoFile").click();
+$("addDoc").onclick = () => $("docFile").click();
+$("photoFile").onchange = (event) => { void readAdded(event, "photo"); };
+$("docFile").onchange = (event) => { void readAdded(event, "doc"); };
+async function ocrCanvas(canvas){
+  const w = await reader();
+  const result = await enqueue(() => w.recognize(canvas));
+  const lines = linesFrom(result.data, canvas.width, canvas.height);
+  return lines.map(l => l.text).join("\n").trim();
+}
+async function canvasFromImage(file){
+  const bitmap = await createImageBitmap(file);
+  const max = 1600;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+async function textFromPdf(file){
+  if (!window.pdfjsLib) throw new Error("The document reader is not ready. Try again in a moment.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({data}).promise;
+  let text = "";
+  const pages = Math.min(pdf.numPages, 5);
+  for (let i = 1; i <= pages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(" ") + "\n";
+  }
+  text = text.replace(/\s+\n/g, "\n").trim();
+  if (text.length >= 12) return text;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({scale: 2});
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
+  await page.render({canvasContext: canvas.getContext("2d"), viewport}).promise;
+  return ocrCanvas(canvas);
+}
+async function readAdded(event, kind){
   const file = event.target.files && event.target.files[0];
   event.target.value = "";
   if (!file) return;
+  showTool(kind === "doc" ? "doc" : "scan");
   setError("");
-  setStatus("Reading the page…");
+  setStatus(kind === "doc" ? "Reading the document…" : "Reading the photo…");
   try {
-    const bitmap = await createImageBitmap(file);
-    const max = 1600;
-    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const w = await reader();
-    const result = await enqueue(() => w.recognize(canvas));
-    const lines = linesFrom(result.data, canvas.width, canvas.height);
-    const text = lines.map(l => l.text).join("\n");
+    const isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
+    const text = isPdf ? await textFromPdf(file) : await ocrCanvas(await canvasFromImage(file));
     $("scanDraft").value = text;
-    setStatus(text ? "Check the words, then Translate" : "No words in that photo");
+    setStatus(text ? "Check the words, then Translate" : "No words in that file");
   } catch (err) {
-    setError(err instanceof Error ? err.message : "Couldn't read that photo. Open Online once so the reader can download.");
+    setError(err instanceof Error ? err.message : "Couldn't read that file.");
   }
-};
-$("scanGo").onclick = async () => {
-  const text = $("scanDraft").value.trim();
-  if (!text) { setError("Take a photo first, or type the words."); return; }
+}
+async function showTranslation(box, text){
+  const source = text.trim();
+  if (!source) { setError("Add some words first."); return; }
   setError("");
   setStatus("Translating…");
-  try {
-    const out = await translateText(text);
-    $("scanOut").hidden = false;
-    $("scanOut").textContent = out;
-    spoken = out;
-    setStatus("Scan");
-  } catch (err) {
-    setError(err instanceof Error ? err.message : "Couldn't translate that.");
-  }
+  const out = await translateText(source);
+  box.hidden = false;
+  box.textContent = out;
+  spoken = out;
+  setStatus("Done");
+}
+$("textGo").onclick = async () => {
+  try { await showTranslation($("textOut"), $("textDraft").value); }
+  catch (err) { setError(err instanceof Error ? err.message : "Couldn't translate that."); }
+};
+$("scanGo").onclick = async () => {
+  try { await showTranslation($("scanOut"), $("scanDraft").value); }
+  catch (err) { setError(err instanceof Error ? err.message : "Couldn't translate that."); }
 };
 paintChrome();
 renderSaved();
